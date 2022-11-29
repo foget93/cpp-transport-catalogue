@@ -11,7 +11,7 @@
 
 namespace transport_catalogue {
 
-enum RouteType {
+enum class RouteType {
     DIRECT, // -
     CIRCULAR // >
 };

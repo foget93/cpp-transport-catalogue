@@ -9,9 +9,9 @@ namespace transport_catalogue {
 
 namespace output {
 
-void OutputRouteAbout(TransportCatalogue& tc, std::string_view route);
+void OutputRouteAbout(std::ostream& os, TransportCatalogue& tc, std::string_view route);
 
-void OutputStopAbout(TransportCatalogue& tc, std::string_view name);
+void OutputStopAbout(std::ostream& os, TransportCatalogue& tc, std::string_view name);
 
 void OutputAbout(TransportCatalogue& tc, query::Command com);
 

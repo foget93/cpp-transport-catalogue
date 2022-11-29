@@ -10,14 +10,14 @@ namespace transport_catalogue {
 
 namespace output {
 
-void OutputRouteAbout(TransportCatalogue& tc, std::string_view route) {
+void OutputRouteAbout(std::ostream& os, TransportCatalogue& tc, std::string_view route) {
     if (tc.GetRoute(route) == nullptr) {
-        cout << "Bus "s << route << ": not found"s << endl;
+        os << "Bus "s << route << ": not found"s << endl;
     }
     else {
         BusStat stat = tc.GetStatistics(tc.GetRoute(route));
 
-        cout << "Bus "s << route << ": "s << stat.all_stops
+        os << "Bus "s << route << ": "s << stat.all_stops
             << " stops on route, "s << stat.unique_stops
             << " unique stops, "s << std::setprecision(6)
             << stat.real_distance << " route length, "s
@@ -26,41 +26,41 @@ void OutputRouteAbout(TransportCatalogue& tc, std::string_view route) {
     }
 }
 
-void OutputStopAbout(TransportCatalogue& tc, string_view name) {
+void OutputStopAbout(std::ostream& os, TransportCatalogue& tc, string_view name) {
     //bool flag = tc.GetStop(name) != nullptr;
     set<string_view> buses = tc.GetBuses(name);
 
     if (tc.GetStop(name) != nullptr) {
         if (buses.size() == 0) {
-            cout << "Stop "s << name << ": no buses"s << endl;
+            os << "Stop "s << name << ": no buses"s << endl;
         }
         else {
-            cout << "Stop "s << name << ": buses "s;
+            os << "Stop "s << name << ": buses "s;
             for (auto it = buses.begin(); it != buses.end(); ++it) {
                 if (next(it) != buses.end()) {
-                    cout << (*it) << " "s;
+                    os << (*it) << " "s;
                 }
                 else {
-                    cout << (*it);
+                    os << (*it);
                 }
             }
-            cout << endl;
+            os << endl;
         }
     }
     else {
-        cout << "Stop "s << name << ": not found"s << endl;
+        os << "Stop "s << name << ": not found"s << endl;
     }
 }
 
-void OutputAbout(TransportCatalogue& tc, query::Command com) {
+void OutputAbout(std::ostream& os, TransportCatalogue& tc, query::Command com) {
     if (com.type == query::QueryType::StopX) {
-        OutputStopAbout(tc, com.name);
+        OutputStopAbout(os, tc, com.name);
     }
 
     if (com.type == query::QueryType::BusX) {
-        OutputRouteAbout(tc, com.name);
+        OutputRouteAbout(os, tc, com.name);
     }
-}
+} //ne ispolz
 
 }//namespace output
 }//namespace transport_catalogue

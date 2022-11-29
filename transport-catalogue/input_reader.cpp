@@ -79,7 +79,7 @@ vector<pair<string_view, string_view>> Command::ParseDistances(vector<string_vie
     return result;
 }
 
-vector<string_view> Command::ParseBuses(vector<string_view> vec_input) {
+vector<string_view> Command::ParseBuses(const vector<string_view>& vec_input) {
     vector<string_view> result;
     vector<string_view> parsed_buses;
 
@@ -109,11 +109,11 @@ vector<string_view> Command::ParseBuses(vector<string_view> vec_input) {
     return result;
 }
 
-void Command::ParseCommandString(string input) {
+void Command::ParseCommandString(const string& input) {
     static std::unordered_map<std::string, QueryType> const table = {
         {"Stop"s, QueryType::StopX}, {"Bus"s, QueryType::BusX}
     };
-    origin_command = move(input);
+    this->origin_command = move(input);
     auto vec_input = Split(origin_command, ' ');
     auto pos_start = origin_command.find_first_not_of(' ');
     auto pos_end_of_command = origin_command.find(' ', pos_start);
@@ -190,21 +190,21 @@ void Command::ParseCommandString(string input) {
     }
 }
 
-void InputReader::ParseInput() {
+void InputReader::ParseInput(std::istream& input_stream) {
     int query_count;
-    cin >> query_count;
-    cin.ignore();
+    input_stream >> query_count;
+    input_stream.ignore();
     string command;
 
     for (int i = 0; i < query_count; ++i) {
-        getline(cin, command);
+        getline(input_stream, command);
         Command cur_command;
         cur_command.ParseCommandString(move(command));
         commands_.push_back(move(cur_command));
     }
 }
 
-void InputReader::Load(TransportCatalogue& tc) {
+void InputReader::Load(std::ostream& os, TransportCatalogue& tc) {
     //firstly with description
     auto it_desc = partition(commands_.begin(), commands_.end(), [](Command com) {
         return !com.desc_command.empty();
@@ -216,23 +216,23 @@ void InputReader::Load(TransportCatalogue& tc) {
 
     //Stop X:
     for (auto cur_it = commands_.begin(); cur_it != it_stops; ++cur_it) {
-        InputReader::LoadCommand(tc, *cur_it, 0);
+        InputReader::LoadCommand(os, tc, *cur_it, 0);
     }
     //set stop distances
     for (auto cur_it = commands_.begin(); cur_it != it_stops; ++cur_it) {
-        InputReader::LoadCommand(tc, *cur_it, 1);
+        InputReader::LoadCommand(os, tc, *cur_it, 1);
     }
     //Bus X:
     for (auto cur_it = it_stops; cur_it != it_desc; ++cur_it) {
-        InputReader::LoadCommand(tc, *cur_it, 0);
+        InputReader::LoadCommand(os, tc, *cur_it, 0);
     }
     //last queries (output)
     for (auto cur_it = it_desc; cur_it != commands_.end(); ++cur_it) {
-        InputReader::LoadCommand(tc, *cur_it, 0);
+        InputReader::LoadCommand(os, tc, *cur_it, 0);
     }
 }
 
-void InputReader::LoadCommand(TransportCatalogue& tc, Command com, bool dist) {
+void InputReader::LoadCommand(std::ostream& os, TransportCatalogue& tc, Command com, bool dist) {
     switch (com.type) {
         case QueryType::StopX:
             if (com.coordinates != pair<string_view, string_view>()) {
@@ -252,7 +252,7 @@ void InputReader::LoadCommand(TransportCatalogue& tc, Command com, bool dist) {
                 }
             }
             else {
-                output::OutputStopAbout(tc, com.name);
+                output::OutputStopAbout(os, tc, com.name);
             }
 
             break;
@@ -261,7 +261,7 @@ void InputReader::LoadCommand(TransportCatalogue& tc, Command com, bool dist) {
                 tc.AddRoute(com.name, com.route_type, com.route);
             }
             else {
-                output::OutputRouteAbout(tc, com.name);
+                output::OutputRouteAbout(os, tc, com.name);
             }
             break;
     }

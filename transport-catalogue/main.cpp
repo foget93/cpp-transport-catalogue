@@ -9,9 +9,9 @@ int main() {
     TransportCatalogue tc;
     InputReader ir;
 
-    ir.ParseInput();
-    ir.ParseInput();
+    ir.ParseInput(cin);
+    ir.ParseInput(cin);
 
-    ir.Load(tc);
+    ir.Load(cout, tc);
     return 0;
 }

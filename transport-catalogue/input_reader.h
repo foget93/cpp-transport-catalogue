@@ -32,11 +32,11 @@ struct Command {
 
     std::pair<std::string_view, std::string_view> ParseCoordinates(std::string_view latitude, std::string_view longitude);
 
-    std::vector<std::string_view> ParseBuses(std::vector<std::string_view> vec_input);
+    std::vector<std::string_view> ParseBuses(const std::vector<std::string_view>& vec_input);
 
     std::vector<std::pair<std::string_view, std::string_view>> ParseDistances(std::vector<std::string_view> vec_input);
 
-    void ParseCommandString(std::string input);
+    void ParseCommandString(const std::string& input);
 
 };
 
@@ -44,9 +44,9 @@ inline std::vector<std::string_view> Split(std::string_view string, char delim);
 
 class InputReader {
 public:
-    void Load(TransportCatalogue& tc);
-    void LoadCommand(TransportCatalogue& tc, Command com, bool dist);
-    void ParseInput();
+    void Load(std::ostream& os, TransportCatalogue& tc);
+    void LoadCommand(std::ostream& os, TransportCatalogue& tc, Command com, bool dist);
+    void ParseInput(std::istream& input_stream);
 
 private:
     std::vector<Command> commands_;
