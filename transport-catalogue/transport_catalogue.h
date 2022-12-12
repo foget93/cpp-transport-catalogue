@@ -9,6 +9,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace transport_catalogue {
 
@@ -34,17 +35,19 @@ public:
 
     void AddRoute(std::string_view number, RouteType type, std::vector<std::string_view> stops);
 
-    const Bus* GetRoute(std::string_view name);
+    const Bus* GetRoute(std::string_view name) const;
 
-    const Stop* GetStop(std::string_view name);
+    const Stop* GetStop(std::string_view name) const;
 
-    std::set<std::string_view> GetBuses(std::string_view stop);
+    std::set<std::string_view> GetBuses(std::string_view stop) const;
 
     void SetStopDistance(std::string_view stop1, uint64_t dist, std::string_view stop2);
 
-    uint64_t GetStopDistance(const Stop* stop1, const Stop* stop2);
+    uint64_t GetStopDistance(const Stop* stop1, const Stop* stop2) const;
 
-    BusStat GetStatistics(const Bus* bus);
+    BusStat GetStatistics(const Bus* bus) const;
+
+    //[[nodiscard]] std::unique_ptr<std::set<std::string_view>> GetBusesPassingThroughTheStop(std::string_view stop_name) const;
 
 private:
     std::deque<Bus> buses_;

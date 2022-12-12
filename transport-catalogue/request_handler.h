@@ -1,9 +1,12 @@
 #pragma once
 
-#include "transport_catalogue.h"
+#include "json_reader.h"
 
-#include <unordered_set>
-#include <optional>
+namespace request {
+
+void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output);
+
+}
 /*
  * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
  * хотелось бы помещать ни в transport_catalogue, ни в json reader.

@@ -95,8 +95,9 @@ json::Node MakeStopResponse(int request_id, const std::set<std::string_view>& bu
 
     json::Array buses_array;
     buses_array.reserve(buses.size());
-    for (std::string_view bus : buses)
+    for (std::string_view bus : buses) {
         buses_array.emplace_back(std::string(bus));
+    }
 
     response.emplace("buses"s, std::move(buses_array));
 
@@ -158,9 +159,6 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     return catalogue;
 }
 
-
-
-
 json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& requests/*,
                             const render::Visualization& settings*/) {
     json::Array response;
@@ -176,21 +174,32 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
         if (type == "Bus"s) {
             name = request_dict_view.at("name"s).AsString();
 
-            const Bus* buf = catalogue.GetRoute(name);
-            BusStat bs = catalogue.GetStatistics(buf);
-//            if (BusStat bs = catalogue.GetStatistics(catalogue.GetRoute(name))) {
-//                response.emplace_back(MakeBusResponse(request_id, *bus_statistics));
-//            } else {
-//                response.emplace_back(MakeErrorResponse(request_id));
-//            }
-        } else if (type == "Stop"s) {
-            name = request_dict_view.at("name"s).AsString();
-            if (auto buses = catalogue.GetBusesPassingThroughTheStop(name)) {
-                response.emplace_back(MakeStopResponse(request_id, *buses));
+            const Bus* buf = catalogue.GetRoute(name);   
+            if (buf != nullptr) {
+                BusStat bs = catalogue.GetStatistics(buf);
+                response.emplace_back(MakeBusResponse(request_id, bs));
             } else {
                 response.emplace_back(MakeErrorResponse(request_id));
             }
-        } /*else if (type == "Map"s) {
+        }
+        else if (type == "Stop"s) {
+            name = request_dict_view.at("name"s).AsString();
+            std::set<std::string_view> buses = catalogue.GetBuses(name);
+
+            if (catalogue.GetStop(name) != nullptr) {
+                if (buses.size() == 0 && !catalogue.GetStop(name)) { //остановка не входящая не в один маршрут (будь она не ладна)) =)))
+                    response.emplace_back(MakeErrorResponse(request_id));
+                }
+                else {
+                    response.emplace_back(MakeStopResponse(request_id, buses));
+                }
+            }
+            else {
+                response.emplace_back(MakeErrorResponse(request_id));
+            }
+        }
+
+        /*else if (type == "Map"s) {
             std::string image = RenderTransportMap(catalogue, settings);
             response.emplace_back(MakeMapImageResponse(request_id, image));
         }*/

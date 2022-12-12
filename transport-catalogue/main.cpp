@@ -1,11 +1,14 @@
 #include "input_reader.h"
 #include "transport_catalogue.h"
 #include "json_reader.h"
+#include "request_handler.h"
+
 #include <sstream>
 
 using namespace std;
 using namespace transport_catalogue;
 using namespace query;
+using namespace request;
 
 //json::Document LoadJSON(const std::string& s) {
 //    std::istringstream strm(s);
@@ -29,6 +32,42 @@ int main() {
 //    ir.ParseInput(cin);
 //    ir.Load(cout, tc);
 
+    std::string str {R"(  {
+                     "base_requests": [
+                       {
+                         "type": "Bus",
+                         "name": "114",
+                         "stops": ["Морской вокзал", "Ривьерский мост"],
+                         "is_roundtrip": false
+                       },
+                       {
+                         "type": "Stop",
+                         "name": "Ривьерский мост",
+                         "latitude": 43.587795,
+                         "longitude": 39.716901,
+                         "road_distances": {"Морской вокзал": 850}
+                       },
+                       {
+                         "type": "Stop",
+                         "name": "Морской вокзал",
+                         "latitude": 43.581969,
+                         "longitude": 39.719848,
+                         "road_distances": {"Ривьерский мост": 850}
+                       },
+                     {
+                       "type": "Stop",
+                       "name": "Морской",
+                       "latitude": 11.581969,
+                       "longitude": 12.719848,
+                       "road_distances": {"Ривьерский мост": 850}
+                     }
+                     ],
+                     "stat_requests": [
+                       { "id": 1, "type": "Stop", "name": "Ривьерский мост" },
+                       { "id": 2, "type": "Bus", "name": "114" },
+                       { "id": 3, "type": "Stop", "name": "Морской" }
+                     ]
+                   }   )"s};
 //    std::string str {R"(  {
 //                     "base_requests": [
 //                       {
@@ -51,42 +90,15 @@ int main() {
 //                         "longitude": 39.719848,
 //                         "road_distances": {"Ривьерский мост": 850}
 //                       }
-//                     ],
-//                     "stat_requests": [
-//                       { "id": 1, "type": "Stop", "name": "Ривьерский мост" },
-//                       { "id": 2, "type": "Bus", "name": "114" }
 //                     ]
 //                   }   )"s};
-    std::string str {R"(  {
-                     "base_requests": [
-                       {
-                         "type": "Bus",
-                         "name": "114",
-                         "stops": ["Морской вокзал", "Ривьерский мост"],
-                         "is_roundtrip": false
-                       },
-                       {
-                         "type": "Stop",
-                         "name": "Ривьерский мост",
-                         "latitude": 43.587795,
-                         "longitude": 39.716901,
-                         "road_distances": {"Морской вокзал": 850}
-                       },
-                       {
-                         "type": "Stop",
-                         "name": "Морской вокзал",
-                         "latitude": 43.581969,
-                         "longitude": 39.719848,
-                         "road_distances": {"Ривьерский мост": 850}
-                       }
-                     ]
-                   }   )"s};
-    std::istringstream sstream{str};
 
-    const auto input_json = json::Load(sstream).GetRoot();
-    //TransportCatalogue tc;
-    const auto& base_request = input_json.AsMap().at("base_requests"s).AsArray();
-    auto tc = request::ProcessBaseRequest(base_request);
+    std::istringstream sstream{str};
+    ProcessTransportCatalogueQuery(sstream, cout);
+//    const auto input_json = json::Load(sstream).GetRoot();
+//    //TransportCatalogue tc;
+//    const auto& base_request = input_json.AsMap().at("base_requests"s).AsArray();
+//    auto tc = request::ProcessBaseRequest(base_request);
 
     //json::Document doc = LoadJSON(str);
 
