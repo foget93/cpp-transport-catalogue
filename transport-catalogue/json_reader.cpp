@@ -15,27 +15,16 @@ enum class RouteType {
     CIRCULAR // >
 };
 
-struct Stop {
-    std::string name;
-    geo::Coordinates coordinates;
-};
-
-struct Bus {
-    std::string number;
-    std::vector<const Stop*> stops;
-};
 
 
-struct BusStat {
-    size_t all_stops {0};
-    size_t unique_stops {0};
-    double distance {0.};
-    uint64_t real_distance {0};
-    double curvature {0.};
-};
+    void AddStop(std::string_view name, double latitude, double longitude);
+    void AddRoute(std::string_view number, RouteType type, std::vector<std::string_view> stops);
 */
-namespace {
 
+//struct Stop {
+//    std::string name;
+//    geo::Coordinates coordinates;
+//};
 std::pair<Stop, bool> ParseBusStopInput(const json::Dict& info) {
     Stop stop;
 
@@ -48,11 +37,25 @@ std::pair<Stop, bool> ParseBusStopInput(const json::Dict& info) {
     return {std::move(stop), has_road_distances};
 }
 
-Bus ParseBusRouteInput(const json::Dict& info) {
-    Bus bus;
+//struct Bus {
+//    std::string number;
+//    std::vector<const Stop*> stops;
+//};
+
+/*
+
+*/
+struct Bus_str {
+    std::string number;
+    RouteType type;
+    std::vector<std::string_view> stops;
+};
+
+Bus_str ParseBusRouteInput(const json::Dict& info) {
+    Bus_str bus;
 
     bus.number = info.at("name"s).AsString();
-    //bus.type = info.at("is_roundtrip"s).AsBool() ? RouteType::CIRCLE : RouteType::TWO_DIRECTIONAL;
+    bus.type = info.at("is_roundtrip"s).AsBool() ? RouteType::CIRCULAR : RouteType::DIRECT;
 
     const auto& stops = info.at("stops"s).AsArray();
     bus.stops.reserve(stops.size());
@@ -61,10 +64,16 @@ Bus ParseBusRouteInput(const json::Dict& info) {
         bus.stops.emplace_back(stop.AsString());
     }
 
-    //bus.unique_stops = {bus.stop_names.begin(), bus.stop_names.end()};
-
     return bus;
 }
+
+//struct BusStat {
+//    size_t all_stops {0};
+//    size_t unique_stops {0};
+//    double distance {0.};
+//    uint64_t real_distance {0};
+//    double curvature {0.};
+//};
 
 json::Node MakeBusResponse(int request_id, const BusStat& statistics) {
     json::Dict response;
@@ -72,9 +81,9 @@ json::Node MakeBusResponse(int request_id, const BusStat& statistics) {
     // P.S. no need to use std::move() because all types on the right are trivial
     response.emplace("curvature"s, statistics.curvature);
     response.emplace("request_id"s, request_id);
-    response.emplace("route_length"s, statistics.rout_length);
-    response.emplace("stop_count"s, static_cast<int>(statistics.stops_count));
-    response.emplace("unique_stop_count"s, static_cast<int>(statistics.unique_stops_count));
+    response.emplace("route_length"s, static_cast<int>(statistics.real_distance));
+    response.emplace("stop_count"s, static_cast<int>(statistics.all_stops));
+    response.emplace("unique_stop_count"s, static_cast<int>(statistics.unique_stops));
 
     return response;
 }
@@ -103,66 +112,6 @@ json::Node MakeErrorResponse(int request_id) {
     return response;
 }
 
-/*json::Node MakeMapImageResponse(int request_id, const std::string& image) {
-    json::Dict response;
-
-    response.emplace("request_id"s, request_id);
-    response.emplace("map"s, image);
-
-    return response;
-}*/
-
-/* METHODS FOR MAP IMAGE RENDERING */
-/*
-render::Screen ParseScreenSettings(const json::Dict& settings) {
-    render::Screen screen;
-
-    screen.width_ = settings.at("width"s).AsDouble();
-    screen.height_ = settings.at("height"s).AsDouble();
-    screen.padding_ = settings.at("padding"s).AsDouble();
-
-    return screen;
-}
-
-render::Label ParseLabelSettings(const json::Dict& settings, const std::string& key_type) {
-    int font_size = settings.at(key_type + "_label_font_size"s).AsInt();
-    const json::Array offset = settings.at(key_type + "_label_offset"s).AsArray();
-
-    double offset_x = offset.at(0).AsDouble();
-    double offset_y = offset.at(1).AsDouble();
-
-    return {font_size, {offset_x, offset_y}};
-}
-
-svg::Color ParseColor(const json::Node& node) {
-    // Node with color could be: string, rgb, rgba
-    if (node.IsString())
-        return node.AsString();
-
-    const auto& array = node.AsArray();
-    uint8_t red = array.at(0).AsInt();
-    uint8_t green = array.at(1).AsInt();
-    uint8_t blue = array.at(2).AsInt();
-
-    // In case there is only 3 colors in the array - it is egb
-    if (array.size() == 3)
-        return svg::Rgb(red, green, blue);
-
-    // Otherwise - this is rgba
-    double alpha = array.at(3).AsDouble();
-    return svg::Rgba(red, green, blue, alpha);
-}
-
-render::UnderLayer ParseLayer(const json::Dict& settings) {
-    render::UnderLayer layer;
-
-    layer.color_ = ParseColor(settings.at("underlayer_color"s));
-    layer.width_ = settings.at("underlayer_width"s).AsDouble();
-
-    return layer;
-}
-*/
-}  // namespace
 
 TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     TransportCatalogue catalogue;
@@ -175,7 +124,7 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     requests_ids_with_buses.reserve(requests.size());
 
     // Step 1. Store all stops to the catalog and mark requests, needed to be processed afterward
-    for (int id = 0; id != requests.size(); ++id) {
+    for (int id = 0; id != static_cast<int>(requests.size()); ++id) {
         const auto& request_dict_view = requests.at(id).AsMap();
 
         if (request_dict_view.at("type"s) == "Stop"s) {
@@ -183,7 +132,7 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
             if (has_road_distances)
                 requests_ids_with_road_distances.emplace_back(id);
 
-            catalogue.AddStop(std::move(stop),);
+            catalogue.AddStop(std::move(stop.name), stop.coordinates.lat, stop.coordinates.lng);
         } else if (request_dict_view.at("type"s) == "Bus"s) {
             requests_ids_with_buses.emplace_back(id);
         }
@@ -198,40 +147,21 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
             catalogue.SetStopDistance(stop_from, distance.AsInt(), stop_to);
     }
 
+    //void AddRoute(std::string_view number, RouteType type, std::vector<std::string_view> stops);
     // Step 3. Add info about buses routes through stops
     for (int id : requests_ids_with_buses) {
         const auto& request_dict_view = requests.at(id).AsMap();
-        catalogue.AddBus(ParseBusRouteInput(request_dict_view));
+        auto route = ParseBusRouteInput(request_dict_view);
+        catalogue.AddRoute(route.number, route.type, route.stops);
     }
 
     return catalogue;
 }
 
-/*render::Visualization ParseVisualizationSettings(const json::Dict& settings) {
-    render::Visualization final_settings;
 
-    double line_width = settings.at("line_width"s).AsDouble();
-    double stop_radius = settings.at("stop_radius"s).AsDouble();
 
-    // Parse list of colors
-    const auto& colors = settings.at("color_palette"s).AsArray();
-    std::vector<svg::Color> svg_colors;
-    svg_colors.reserve(colors.size());
-    for (const auto& color : colors)
-        svg_colors.emplace_back(ParseColor(color));
 
-    final_settings.SetScreen(ParseScreenSettings(settings))
-        .SetLineWidth(line_width)
-        .SetStopRadius(stop_radius)
-        .SetLabels(render::LabelType::Stop, ParseLabelSettings(settings, "stop"s))
-        .SetLabels(render::LabelType::Bus, ParseLabelSettings(settings, "bus"s))
-        .SetUnderLayer(ParseLayer(settings))
-        .SetColors(std::move(svg_colors));
-
-    return final_settings;
-}*/
-
-json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Array& requests/*,
+json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& requests/*,
                             const render::Visualization& settings*/) {
     json::Array response;
     response.reserve(requests.size());
@@ -246,11 +176,13 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
         if (type == "Bus"s) {
             name = request_dict_view.at("name"s).AsString();
 
-            if (auto bus_statistics = catalogue.GetBusStatistics(name)) {
-                response.emplace_back(MakeBusResponse(request_id, *bus_statistics));
-            } else {
-                response.emplace_back(MakeErrorResponse(request_id));
-            }
+            const Bus* buf = catalogue.GetRoute(name);
+            BusStat bs = catalogue.GetStatistics(buf);
+//            if (BusStat bs = catalogue.GetStatistics(catalogue.GetRoute(name))) {
+//                response.emplace_back(MakeBusResponse(request_id, *bus_statistics));
+//            } else {
+//                response.emplace_back(MakeErrorResponse(request_id));
+//            }
         } else if (type == "Stop"s) {
             name = request_dict_view.at("name"s).AsString();
             if (auto buses = catalogue.GetBusesPassingThroughTheStop(name)) {
@@ -258,13 +190,13 @@ json::Node MakeStatResponse(const TransportCatalogue& catalogue, const json::Arr
             } else {
                 response.emplace_back(MakeErrorResponse(request_id));
             }
-        } else if (type == "Map"s) {
+        } /*else if (type == "Map"s) {
             std::string image = RenderTransportMap(catalogue, settings);
             response.emplace_back(MakeMapImageResponse(request_id, image));
-        }
+        }*/
     }
 
     return response;
 }
-
-}  // namespace request
+}
+  // namespace request

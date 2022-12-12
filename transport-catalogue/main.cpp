@@ -1,18 +1,99 @@
 #include "input_reader.h"
 #include "transport_catalogue.h"
+#include "json_reader.h"
+#include <sstream>
 
 using namespace std;
 using namespace transport_catalogue;
 using namespace query;
 
+//json::Document LoadJSON(const std::string& s) {
+//    std::istringstream strm(s);
+//    return json::Load(strm);
+//}
+//json::Node LoadJSONNode(const std::string& s) {
+//    std::istringstream strm(s);
+//    return json::LoadNode(strm);
+//}
+
+//std::string Print(const json::Node& node) {
+//    std::ostringstream out;
+//    Print(json::Document{node}, out);
+//    return out.str();
+//}
+
 int main() {
-    TransportCatalogue tc;
-    InputReader ir;
+//    TransportCatalogue tc;
+//    InputReader ir;
+//    ir.ParseInput(cin);
+//    ir.ParseInput(cin);
+//    ir.Load(cout, tc);
 
-    ir.ParseInput(cin);
-    ir.ParseInput(cin);
+//    std::string str {R"(  {
+//                     "base_requests": [
+//                       {
+//                         "type": "Bus",
+//                         "name": "114",
+//                         "stops": ["Морской вокзал", "Ривьерский мост"],
+//                         "is_roundtrip": false
+//                       },
+//                       {
+//                         "type": "Stop",
+//                         "name": "Ривьерский мост",
+//                         "latitude": 43.587795,
+//                         "longitude": 39.716901,
+//                         "road_distances": {"Морской вокзал": 850}
+//                       },
+//                       {
+//                         "type": "Stop",
+//                         "name": "Морской вокзал",
+//                         "latitude": 43.581969,
+//                         "longitude": 39.719848,
+//                         "road_distances": {"Ривьерский мост": 850}
+//                       }
+//                     ],
+//                     "stat_requests": [
+//                       { "id": 1, "type": "Stop", "name": "Ривьерский мост" },
+//                       { "id": 2, "type": "Bus", "name": "114" }
+//                     ]
+//                   }   )"s};
+    std::string str {R"(  {
+                     "base_requests": [
+                       {
+                         "type": "Bus",
+                         "name": "114",
+                         "stops": ["Морской вокзал", "Ривьерский мост"],
+                         "is_roundtrip": false
+                       },
+                       {
+                         "type": "Stop",
+                         "name": "Ривьерский мост",
+                         "latitude": 43.587795,
+                         "longitude": 39.716901,
+                         "road_distances": {"Морской вокзал": 850}
+                       },
+                       {
+                         "type": "Stop",
+                         "name": "Морской вокзал",
+                         "latitude": 43.581969,
+                         "longitude": 39.719848,
+                         "road_distances": {"Ривьерский мост": 850}
+                       }
+                     ]
+                   }   )"s};
+    std::istringstream sstream{str};
 
-    ir.Load(cout, tc);
+    const auto input_json = json::Load(sstream).GetRoot();
+    //TransportCatalogue tc;
+    const auto& base_request = input_json.AsMap().at("base_requests"s).AsArray();
+    auto tc = request::ProcessBaseRequest(base_request);
+
+    //json::Document doc = LoadJSON(str);
+
+//    int a = 0;
+
+
+
     return 0;
 
     /*
@@ -25,6 +106,41 @@ int main() {
      * Вывести в stdout ответы в виде JSON
      */
 }
+/*
+json::Document LoadJSON(const std::string& s) {
+    std::istringstream strm(s);
+    return json::Load(strm);
+}
+
+std::string Print(const Node& node) {
+    std::ostringstream out;
+    Print(Document{node}, out);
+    return out.str();
+}
+ *
+void Benchmark() {
+    const auto start = std::chrono::steady_clock::now();
+    Array arr;
+    arr.reserve(1'000);
+    for (int i = 0; i < 1'000; ++i) {
+        arr.emplace_back(Dict{
+            {"int"s, 42},
+            {"double"s, 42.1},
+            {"null"s, nullptr},
+            {"string"s, "hello"s},
+            {"array"s, Array{1, 2, 3}},
+            {"bool"s, true},
+            {"map"s, Dict{{"key"s, "value"s}}},
+        });
+    }
+    std::stringstream strm;
+    json::Print(Document{arr}, strm);
+    const auto doc = json::Load(strm);
+    assert(doc.GetRoot() == arr);
+    const auto duration = std::chrono::steady_clock::now() - start;
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << "ms"sv
+              << std::endl;
+}*/
 
 /*
 Ввод
@@ -57,3 +173,4 @@ Stop Samara: not found
 Stop Prazhskaya: no buses
 Stop Biryulyovo Zapadnoye: buses 256 828
 */
+//"road_distances": {"Ривьерский мост": 850}

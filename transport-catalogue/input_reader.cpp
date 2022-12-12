@@ -204,12 +204,14 @@ void InputReader::ParseInput(std::istream& input_stream) {
     }
 }
 
+// ========= load
+
 void InputReader::Load(std::ostream& os, TransportCatalogue& tc) {
-    //firstly with description
+    //первыми с описанием
     auto it_desc = partition(commands_.begin(), commands_.end(), [](Command com) {
         return !com.desc_command.empty();
     });
-    //firstly stop queries
+    //первыми запросы остановок
     auto it_stops = partition(commands_.begin(), it_desc, [](Command com) {
         return com.type == QueryType::StopX;
     });
@@ -256,6 +258,7 @@ void InputReader::LoadCommand(std::ostream& os, TransportCatalogue& tc, Command 
             }
 
             break;
+
         case QueryType::BusX:
             if (!com.route.empty()) {
                 tc.AddRoute(com.name, com.route_type, com.route);
