@@ -152,7 +152,7 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     // Step 3. Add info about buses routes through stops
     for (int id : requests_ids_with_buses) {
         const auto& request_dict_view = requests.at(id).AsMap();
-        auto route = ParseBusRouteInput(request_dict_view);
+        Bus_str route = ParseBusRouteInput(request_dict_view);
         catalogue.AddRoute(route.number, route.type, route.stops);
     }
 
@@ -198,7 +198,6 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
                 response.emplace_back(MakeErrorResponse(request_id));
             }
         }
-
         /*else if (type == "Map"s) {
             std::string image = RenderTransportMap(catalogue, settings);
             response.emplace_back(MakeMapImageResponse(request_id, image));

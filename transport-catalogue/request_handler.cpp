@@ -11,7 +11,7 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
     const auto input_json = json::Load(input).GetRoot();
 
     // Step 1. Form catalogue, basing on the input
-    TransportCatalogue catalogue;
+    //TransportCatalogue catalogue;
     const auto& base_requests = input_json.AsMap().at("base_requests"s).AsArray();
     auto transport_catalogue = ProcessBaseRequest(base_requests);
 
