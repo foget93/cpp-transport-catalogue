@@ -89,6 +89,7 @@ void map_renderer::MapRenderer::PrintRoad ( std::vector<const Bus*> buses, ostre
     stops.erase(stops0, stops.end());
 
     const SphereProjector proj{coords.begin(), coords.end(), map_rend_.width, map_rend_.height, map_rend_.padding};
+
     size_t i = 0;
     for (auto busptr: buses) {
         if (!busptr->stops.empty()) {

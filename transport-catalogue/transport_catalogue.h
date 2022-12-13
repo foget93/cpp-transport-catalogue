@@ -41,7 +41,7 @@ public:
 
     std::set<std::string_view> GetBuses(std::string_view stop) const;
 
-    std::vector<const Bus*> GetAllBuses() const;
+    std::vector<const Bus*> GetAllBuses() const; // for print
 
     void SetStopDistance(std::string_view stop1, uint64_t dist, std::string_view stop2);
 
@@ -49,7 +49,6 @@ public:
 
     BusStat GetStatistics(const Bus* bus) const;
 
-    //[[nodiscard]] std::unique_ptr<std::set<std::string_view>> GetBusesPassingThroughTheStop(std::string_view stop_name) const;
 
 private:
     std::deque<Bus> buses_;

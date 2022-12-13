@@ -1,6 +1,7 @@
 #include "json_reader.h"
 
 #include <string>
+#include <sstream>
 
 namespace request {
 
@@ -113,6 +114,15 @@ json::Node MakeErrorResponse(int request_id) {
     return response;
 }
 
+json::Node MakeMapImageResponse(int request_id, const std::string& image) {
+    json::Dict response;
+
+    response.emplace("request_id"s, request_id);
+    response.emplace("map"s, image);
+
+    return response;
+}
+
 TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     TransportCatalogue catalogue;
 
@@ -213,8 +223,8 @@ map_renderer::RenderSettings ParseRenderSettings(const json::Dict& settings) {
     return render_settings;
 }
 
-json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& requests/*,
-                            const render::Visualization& settings*/) {
+json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& requests,
+                            const map_renderer::RenderSettings& settings) {
     json::Array response;
     response.reserve(requests.size());
 
@@ -223,12 +233,12 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
 
         int request_id = request_dict_view.at("id"s).AsInt();
         std::string type = request_dict_view.at("type"s).AsString();
-        std::string name;  //> Could be a name of bus or a stop
+        std::string name;
 
         if (type == "Bus"s) {
             name = request_dict_view.at("name"s).AsString();
 
-            const Bus* buf = catalogue.GetRoute(name);   
+            const Bus* buf = catalogue.GetRoute(name);
             if (buf != nullptr) {
                 BusStat bs = catalogue.GetStatistics(buf);
                 response.emplace_back(MakeBusResponse(request_id, bs));
@@ -252,10 +262,14 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
                 response.emplace_back(MakeErrorResponse(request_id));
             }
         }
-        /*else if (type == "Map"s) {
-            std::string image = RenderTransportMap(catalogue, settings);
+        else if (type == "Map"s) {
+            map_renderer::MapRenderer map_rend(settings);
+            std::ostringstream os;
+            map_rend.PrintRoad(catalogue.GetAllBuses(), os);
+
+            std::string image = os.str();
             response.emplace_back(MakeMapImageResponse(request_id, image));
-        }*/
+        }
     }
 
     return response;

@@ -105,12 +105,6 @@ using namespace json;
 using namespace std::literals;
 
 namespace {
-
-// Ниже даны тесты, проверяющие JSON-библиотеку.
-// Можете воспользоваться ими, чтобы протестировать свой код.
-// Раскомментируйте их по мере работы.
-
-
 json::Document LoadJSON(const std::string& s) {
     std::istringstream strm(s);
     return json::Load(strm);

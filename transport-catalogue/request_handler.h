@@ -41,3 +41,5 @@ private:
     //const renderer::MapRenderer& renderer_;
 };*/
 
+//переделать после того как перегоню мягкие дедлайны, дай бог
+

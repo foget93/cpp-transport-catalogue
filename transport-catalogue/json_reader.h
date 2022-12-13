@@ -18,8 +18,8 @@ transport_catalogue::TransportCatalogue ProcessBaseRequest(const json::Array& re
 
 map_renderer::RenderSettings ParseRenderSettings(const json::Dict& settings);
 
-json::Node MakeStatResponse(transport_catalogue::TransportCatalogue& catalogue, const json::Array& requests/*,
-                            const render::Visualization& settings*/);
+json::Node MakeStatResponse(transport_catalogue::TransportCatalogue& catalogue, const json::Array& requests,
+                            const map_renderer::RenderSettings& settings);
 
 }
 
