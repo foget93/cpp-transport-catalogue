@@ -113,7 +113,6 @@ json::Node MakeErrorResponse(int request_id) {
     return response;
 }
 
-
 TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     TransportCatalogue catalogue;
 
@@ -157,6 +156,61 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
     }
 
     return catalogue;
+}
+
+svg::Color JsonToColor(const json::Node& nod) {
+    svg::Color col;
+    if (nod.IsString()) {
+        col = {nod.AsString()};
+    }
+    else {
+        if (nod.AsArray().size() == 4) {
+            col = svg::Rgba{
+                    static_cast<uint8_t>(nod.AsArray()[0].AsInt()),
+                    static_cast<uint8_t>(nod.AsArray()[1].AsInt()),
+                    static_cast<uint8_t>(nod.AsArray()[2].AsInt()),
+                    nod.AsArray()[3].AsDouble()
+            };
+        }
+        else {
+            col = svg::Rgb{
+                    static_cast<uint8_t>(nod.AsArray()[0].AsInt()),
+                    static_cast<uint8_t>(nod.AsArray()[1].AsInt()),
+                    static_cast<uint8_t>(nod.AsArray()[2].AsInt())
+            };
+        }
+    }
+    return col;
+}
+
+map_renderer::RenderSettings ParseRenderSettings(const json::Dict& settings) {
+    map_renderer::RenderSettings render_settings ;
+
+    std::vector<svg::Color> vec;
+    for (auto& a: settings.at("color_palette"s).AsArray()) {
+        auto x = JsonToColor(a);
+        vec.push_back(move(x));
+    }
+
+
+    render_settings.width = settings.at("width"s).AsDouble();
+    render_settings.height = settings.at("height"s).AsDouble();
+    render_settings.padding = settings.at("padding"s).AsDouble();
+    render_settings.line_width = settings.at("line_width"s).AsDouble();
+    render_settings.stop_radius = settings.at("stop_radius"s).AsDouble();
+    render_settings.bus_label_font_size = settings.at("bus_label_font_size"s).AsInt();
+    render_settings.bus_label_offset = {settings.at("bus_label_offset"s).AsArray()[0].AsDouble(),
+                                        settings.at("bus_label_offset"s).AsArray()[1].AsDouble()};
+
+    render_settings.stop_label_font_size = settings.at("stop_label_font_size"s).AsInt();
+    render_settings.stop_label_offset = {settings.at("stop_label_offset"s).AsArray()[0].AsDouble(),
+                                         settings.at("stop_label_offset"s).AsArray()[1].AsDouble()};
+
+    render_settings.underlayer_color = JsonToColor(settings.at("underlayer_color"s));
+    render_settings.underlayer_width = settings.at("underlayer_width"s).AsDouble();
+    render_settings.color_palette = move(vec);
+
+    return render_settings;
 }
 
 json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& requests/*,

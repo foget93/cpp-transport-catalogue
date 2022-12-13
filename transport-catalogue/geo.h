@@ -7,6 +7,10 @@
 namespace geo {
 
 struct Coordinates {
+    Coordinates() = default;
+    Coordinates(double lt, double lg)
+        : lat(lt), lng(lg) {}
+
     double lat; // Широта
     double lng; // Долгота
 

@@ -37,4 +37,6 @@ transport_catalogue.pro.user
 .qmake.stash
 Makefile
 transport_catalogue
+/.qtc_clangd
+.qtc_clangd
 

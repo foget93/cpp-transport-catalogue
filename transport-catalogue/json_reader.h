@@ -6,15 +6,17 @@
  */
 
 #include "json.h"
-//#include "map_renderer.h"
+#include "map_renderer.h"
 #include "transport_catalogue.h"
 #include "domain.h"
+
+
 
 namespace request {
 
 transport_catalogue::TransportCatalogue ProcessBaseRequest(const json::Array& requests);
 
-//render::Visualization ParseVisualizationSettings(const json::Dict& settings);
+map_renderer::RenderSettings ParseRenderSettings(const json::Dict& settings);
 
 json::Node MakeStatResponse(transport_catalogue::TransportCatalogue& catalogue, const json::Array& requests/*,
                             const render::Visualization& settings*/);

@@ -9,7 +9,7 @@ SOURCES += \
         input_reader.cpp \
         json_reader.cpp \
         main.cpp \
-        map_rendered.cpp \
+        map_renderer.cpp \
         request_handler.cpp \
         stat_reader.cpp \
         svg.cpp \
@@ -21,7 +21,7 @@ HEADERS += \
     geo.h \
     input_reader.h \
     json_reader.h \
-    map_rendered.h \
+    map_renderer.h \
     request_handler.h \
     stat_reader.h \
     svg.h \

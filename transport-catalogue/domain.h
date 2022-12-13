@@ -20,7 +20,7 @@ struct Stop {
 struct Bus {
     std::string number;
     std::vector<const Stop*> stops;
-    //RouteType type;
+    RouteType type;
 };
 
 
