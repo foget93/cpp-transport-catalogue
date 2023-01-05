@@ -71,11 +71,11 @@ int main() {
                        "color_palette": ["green", [255,160,0],"red"]
                      },
                      "stat_requests": [
-                       { "id": 1, "type": "Map" },
+                       { "id": 1, "type": "Bus", "name": "114" },
                        { "id": 2, "type": "Stop", "name": "Ривьерский мост" },
                        { "id": 3, "type": "Bus", "name": "114" }
                      ]
-                   })"s};
+                   })"s}; // "Map"
 
 
     std::istringstream sstream{str};

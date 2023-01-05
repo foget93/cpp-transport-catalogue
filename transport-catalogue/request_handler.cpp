@@ -11,11 +11,11 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
     const auto input_json = json::Load(input).GetRoot();
 
     // Step 1. Form catalogue, base_requests
-    const auto& base_requests = input_json.AsMap().at("base_requests"s).AsArray();
+    const auto& base_requests = input_json.AsDict().at("base_requests"s).AsArray();
     auto transport_catalogue = ProcessBaseRequest(base_requests);
 
     // Step 2. Parse rendering settings
-    const auto& render_settings_json = input_json.AsMap().at("render_settings"s).AsMap();
+    const auto& render_settings_json = input_json.AsDict().at("render_settings"s).AsDict();
     const map_renderer::RenderSettings& render_settings = ParseRenderSettings(render_settings_json);
 
 //    map_renderer::MapRenderer map_rend(render_settings);
@@ -23,7 +23,7 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
 //    map_rend.PrintRoad(bus_ptrs, output);//простой вывод в stdout
 
      //Step 3. Form response
-    const auto& stat_requests = input_json.AsMap().at("stat_requests"s).AsArray();
+    const auto& stat_requests = input_json.AsDict().at("stat_requests"s).AsArray();
     auto response = MakeStatResponse(transport_catalogue, stat_requests, render_settings);
 
     json::Print(json::Document{std::move(response)}, output);

@@ -1,4 +1,5 @@
 #include "json_reader.h"
+#include "json_builder.h"
 
 #include <string>
 #include <sstream>
@@ -33,7 +34,7 @@ std::pair<Stop, bool> ParseBusStopInput(const json::Dict& info) {
     stop.coordinates.lat = info.at("latitude"s).AsDouble();
     stop.coordinates.lng = info.at("longitude"s).AsDouble();
 
-    bool has_road_distances = !info.at("road_distances"s).AsMap().empty();
+    bool has_road_distances = !info.at("road_distances"s).AsDict().empty();
 
     return {std::move(stop), has_road_distances};
 }
@@ -76,51 +77,73 @@ Bus_str ParseBusRouteInput(const json::Dict& info) {
 //    double curvature {0.};
 //};
 
-json::Node MakeBusResponse(int request_id, const BusStat& statistics) {
-    json::Dict response;
+/*json::Node*/ void MakeBusResponse(int request_id, const BusStat& statistics, json::Builder& response) {
+//    json::Dict response;
+//    response.emplace("curvature"s, statistics.curvature);
+//    response.emplace("request_id"s, request_id);
+//    response.emplace("route_length"s, static_cast<int>(statistics.real_distance));
+//    response.emplace("stop_count"s, static_cast<int>(statistics.all_stops));
+//    response.emplace("unique_stop_count"s, static_cast<int>(statistics.unique_stops));
+//    return response;
+    response
+            .StartDict()
+                .Key("curvature"s).Value(statistics.curvature)
+                .Key("request_id"s).Value(request_id)
+                .Key("route_length"s).Value(static_cast<int>(statistics.real_distance))
+                .Key("stop_count"s).Value(static_cast<int>(statistics.all_stops))
+                .Key("unique_stop_count"s).Value(static_cast<int>(statistics.unique_stops))
+            .EndDict();
 
-    // P.S. no need to use std::move() because all types on the right are trivial
-    response.emplace("curvature"s, statistics.curvature);
-    response.emplace("request_id"s, request_id);
-    response.emplace("route_length"s, static_cast<int>(statistics.real_distance));
-    response.emplace("stop_count"s, static_cast<int>(statistics.all_stops));
-    response.emplace("unique_stop_count"s, static_cast<int>(statistics.unique_stops));
-
-    return response;
 }
 
-json::Node MakeStopResponse(int request_id, const std::set<std::string_view>& buses) {
-    json::Dict response;
+/*json::Node*/void MakeStopResponse(int request_id, const std::set<std::string_view>& buses, json::Builder& response) {
+//    json::Dict response;
 
-    response.emplace("request_id"s, request_id);
+//    response.emplace("request_id"s, request_id);
 
-    json::Array buses_array;
-    buses_array.reserve(buses.size());
-    for (std::string_view bus : buses) {
-        buses_array.emplace_back(std::string(bus));
-    }
+//    json::Array buses_array;
+//    buses_array.reserve(buses.size());
+//    for (std::string_view bus : buses) {
+//        buses_array.emplace_back(std::string(bus));
+//    }
 
-    response.emplace("buses"s, std::move(buses_array));
+//    response.emplace("buses"s, std::move(buses_array));
 
-    return response;
+//    return response;
+    response.StartDict();
+        response.Key("request_id"s).Value(request_id);
+
+        response.Key("buses"s).StartArray();
+        for (std::string_view bus : buses) {
+            response.Value(std::string(bus));
+        }
+        response.EndArray();
+    response.EndDict();
 }
 
-json::Node MakeErrorResponse(int request_id) {
-    json::Dict response;
+/*json::Node*/void MakeErrorResponse(int request_id, json::Builder& response) {
+//    json::Dict response;
+//    response.emplace("request_id"s, request_id);
+//    response.emplace("error_message"s, "not found"s);
+//    return response;
 
-    response.emplace("request_id"s, request_id);
-    response.emplace("error_message"s, "not found"s);
-
-    return response;
+    response
+        .StartDict()
+            .Key("request_id"s).Value(request_id)
+            .Key("error_message"s).Value("not found"s)
+        .EndDict();
 }
 
-json::Node MakeMapImageResponse(int request_id, const std::string& image) {
-    json::Dict response;
-
-    response.emplace("request_id"s, request_id);
-    response.emplace("map"s, image);
-
-    return response;
+/*json::Node*/void MakeMapImageResponse(int request_id, const std::string& image, json::Builder& response) {
+//    json::Dict response;
+//    response.emplace("request_id"s, request_id);
+//    response.emplace("map"s, image);
+//    return response;
+    response
+            .StartDict()
+                .Key("request_id"s).Value(request_id)
+                .Key("map"s).Value(image)
+            .EndDict();
 }
 
 TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
@@ -135,7 +158,7 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
 
     // Step 1. Store all stops to the catalog and mark requests, needed to be processed afterward
     for (int id = 0; id != static_cast<int>(requests.size()); ++id) {
-        const auto& request_dict_view = requests.at(id).AsMap();
+        const auto& request_dict_view = requests.at(id).AsDict();
 
         if (request_dict_view.at("type"s) == "Stop"s) {
             auto [stop, has_road_distances] = ParseBusStopInput(request_dict_view);
@@ -150,17 +173,17 @@ TransportCatalogue ProcessBaseRequest(const json::Array& requests) {
 
     // Step 2. Add distances between all stops
     for (int id : requests_ids_with_road_distances) {
-        const auto& request_dict_view = requests.at(id).AsMap();
+        const auto& request_dict_view = requests.at(id).AsDict();
 
         std::string_view stop_from = request_dict_view.at("name"s).AsString();
-        for (const auto& [stop_to, distance] : request_dict_view.at("road_distances"s).AsMap())
+        for (const auto& [stop_to, distance] : request_dict_view.at("road_distances"s).AsDict())
             catalogue.SetStopDistance(stop_from, distance.AsInt(), stop_to);
     }
 
     //void AddRoute(std::string_view number, RouteType type, std::vector<std::string_view> stops);
     // Step 3. Add info about buses routes through stops
     for (int id : requests_ids_with_buses) {
-        const auto& request_dict_view = requests.at(id).AsMap();
+        const auto& request_dict_view = requests.at(id).AsDict();
         Bus_str route = ParseBusRouteInput(request_dict_view);
         catalogue.AddRoute(route.number, route.type, route.stops);
     }
@@ -225,11 +248,13 @@ map_renderer::RenderSettings ParseRenderSettings(const json::Dict& settings) {
 
 json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& requests,
                             const map_renderer::RenderSettings& settings) {
-    json::Array response;
-    response.reserve(requests.size());
+//    json::Array response;
+//    response.reserve(requests.size());
+    json::Builder response = json::Builder();
+    response.StartArray();
 
     for (const auto& request : requests) {
-        const auto& request_dict_view = request.AsMap();
+        const auto& request_dict_view = request.AsDict();
 
         int request_id = request_dict_view.at("id"s).AsInt();
         std::string type = request_dict_view.at("type"s).AsString();
@@ -241,9 +266,9 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
             const Bus* buf = catalogue.GetRoute(name);
             if (buf != nullptr) {
                 BusStat bs = catalogue.GetStatistics(buf);
-                response.emplace_back(MakeBusResponse(request_id, bs));
+                MakeBusResponse(request_id, bs, response);
             } else {
-                response.emplace_back(MakeErrorResponse(request_id));
+                MakeErrorResponse(request_id, response);
             }
         }
         else if (type == "Stop"s) {
@@ -252,14 +277,14 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
 
             if (catalogue.GetStop(name) != nullptr) {
                 if (buses.size() == 0 && !catalogue.GetStop(name)) { //остановка не входящая не в один маршрут (будь она не ладна)) =)))
-                    response.emplace_back(MakeErrorResponse(request_id));
+                    MakeErrorResponse(request_id, response);
                 }
                 else {
-                    response.emplace_back(MakeStopResponse(request_id, buses));
+                    MakeStopResponse(request_id, buses, response);
                 }
             }
             else {
-                response.emplace_back(MakeErrorResponse(request_id));
+                MakeErrorResponse(request_id, response);
             }
         }
         else if (type == "Map"s) {
@@ -268,11 +293,12 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
             map_rend.PrintRoad(catalogue.GetAllBuses(), os);
 
             std::string image = os.str();
-            response.emplace_back(MakeMapImageResponse(request_id, image));
+            MakeMapImageResponse(request_id, image, response);
         }
     }
 
-    return response;
+    response.EndArray();
+    return std::move(response.Build());
 }
 }
   // namespace request
