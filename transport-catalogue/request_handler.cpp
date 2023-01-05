@@ -20,7 +20,7 @@ void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
 
 //    map_renderer::MapRenderer map_rend(render_settings);
 //    std::vector<const transport_catalogue::Bus* > bus_ptrs = transport_catalogue.GetAllBuses();
-//    map_rend.PrintRoad(bus_ptrs, output);
+//    map_rend.PrintRoad(bus_ptrs, output);//простой вывод в stdout
 
      //Step 3. Form response
     const auto& stat_requests = input_json.AsMap().at("stat_requests"s).AsArray();
