@@ -39,27 +39,33 @@ vector<svg::Text> MakeBusName(const transport_catalogue::Bus* busptr, svg::Point
                               svg::Color underlayer_color, const SphereProjector& proj) {
     using namespace svg;
     vector<Text> result;
-    Text text1;
+    Text number_text;
     Point text_coord = proj(geo::Coordinates(busptr->stops[0]->coordinates.lat, busptr->stops[0]->coordinates.lng));
-    text1.SetData(busptr->number).SetPosition(text_coord).
+    number_text.SetData(busptr->number).SetPosition(text_coord).
             SetOffset(point).SetFontSize(bus_label_font_size).SetFontFamily("Verdana"s).SetFontWeight("bold"s).SetFillColor(color);
-    Text text2;
-    text2.SetData(busptr->number).SetPosition(text_coord).
+    Text underlayer_number_text;
+    underlayer_number_text.SetData(busptr->number).SetPosition(text_coord).
             SetOffset(point).SetFontSize(bus_label_font_size).SetFontFamily("Verdana"s).
             SetFontWeight("bold"s).SetStrokeLineCap(StrokeLineCap::ROUND).SetStrokeLineJoin(StrokeLineJoin::ROUND).
             SetStrokeWidth(underlayer_width).SetStrokeColor(underlayer_color).SetFillColor(underlayer_color);
 
-    result.push_back(move(text2));
-    result.push_back(move(text1));
+    result.push_back(move(underlayer_number_text));
+    result.push_back(move(number_text));
     if (busptr->type == RouteType::DIRECT && busptr->stops[busptr->stops.size()/2] != busptr->stops[0]) {
-        Text text3;
+        Text number_text_direct;
         Point text_coord2 = proj(geo::Coordinates(busptr->stops[busptr->stops.size()/2]->coordinates.lat, busptr->stops[busptr->stops.size()/2]->coordinates.lng));
-        text3.SetData(busptr->number).SetPosition(text_coord2).SetOffset(point).SetFontSize(bus_label_font_size).SetFontFamily("Verdana"s).SetFontWeight("bold"s).SetFillColor(color);
-        Text text4;
-        text4.SetData(busptr->number).SetPosition(text_coord2).SetOffset(point).SetFontSize(bus_label_font_size).SetFontFamily("Verdana"s).SetFontWeight("bold"s).SetStrokeLineCap(StrokeLineCap::ROUND).SetStrokeLineJoin(StrokeLineJoin::ROUND).SetStrokeWidth(underlayer_width).SetStrokeColor(underlayer_color).SetFillColor(underlayer_color);
-        result.push_back(move(text4));
-        result.push_back(move(text3));
-        }
+        number_text_direct.SetData(busptr->number).SetPosition(text_coord2).SetOffset(point)
+                .SetFontSize(bus_label_font_size).SetFontFamily("Verdana"s)
+                .SetFontWeight("bold"s).SetFillColor(color);
+        Text underlayer_number_text_direct;
+        underlayer_number_text_direct.SetData(busptr->number).SetPosition(text_coord2).SetOffset(point)
+                .SetFontSize(bus_label_font_size).SetFontFamily("Verdana"s)
+                .SetFontWeight("bold"s).SetStrokeLineCap(StrokeLineCap::ROUND)
+                .SetStrokeLineJoin(StrokeLineJoin::ROUND).SetStrokeWidth(underlayer_width)
+                .SetStrokeColor(underlayer_color).SetFillColor(underlayer_color);
+        result.push_back(move(underlayer_number_text_direct));
+        result.push_back(move(number_text_direct));
+    }
     return result;
 }
 
@@ -73,7 +79,7 @@ void map_renderer::MapRenderer::PrintRoad ( std::vector<const Bus*> buses, ostre
     Document result;
     vector<geo::Coordinates> coords;
 
-    for (auto busptr: buses) {
+    for (auto busptr : buses) {
         for (auto stopptr : busptr->stops) {
             stops.push_back(stopptr);
             geo::Coordinates coord(stopptr->coordinates.lat, stopptr->coordinates.lng);
@@ -102,8 +108,8 @@ void map_renderer::MapRenderer::PrintRoad ( std::vector<const Bus*> buses, ostre
     i = 0;
     for (auto busptr: buses) {
         if (!busptr->stops.empty()) {
-            for (auto& text:
-                 MakeBusName(busptr, Point(map_rend_.bus_label_offset.x, map_rend_.bus_label_offset.y), map_rend_.bus_label_font_size, map_rend_.color_palette[i], map_rend_.underlayer_width, map_rend_.underlayer_color, proj)) {
+            for (auto& text :
+                MakeBusName(busptr, Point(map_rend_.bus_label_offset.x, map_rend_.bus_label_offset.y), map_rend_.bus_label_font_size, map_rend_.color_palette[i], map_rend_.underlayer_width, map_rend_.underlayer_color, proj)) {
                 result.Add(move(text));
             }
             i++;
@@ -111,23 +117,25 @@ void map_renderer::MapRenderer::PrintRoad ( std::vector<const Bus*> buses, ostre
         }
     }
 
-    for (auto stopptr: stops) {
+    for (auto stopptr : stops) {
         Circle circle;
         Point circle_coord = proj(geo::Coordinates(stopptr->coordinates.lat, stopptr->coordinates.lng));
         circle.SetCenter(circle_coord).SetRadius(map_rend_.stop_radius).SetFillColor("white"s);
         result.Add(move(circle));
     }
-    for (auto stopptr: stops) {
-        Text text1;
+    for (auto stopptr : stops) {
+        Text underlayer_stop_text;
         Point text_coord = proj(geo::Coordinates(stopptr->coordinates.lat, stopptr->coordinates.lng));
-        text1.SetPosition(text_coord).SetOffset(Point(map_rend_.stop_label_offset.x, map_rend_.stop_label_offset.y)).
+        underlayer_stop_text.SetPosition(text_coord).SetOffset(Point(map_rend_.stop_label_offset.x, map_rend_.stop_label_offset.y)).
               SetFontSize(map_rend_.stop_label_font_size).SetFontFamily("Verdana"s).SetData(stopptr->name).
               SetStrokeColor(map_rend_.underlayer_color).SetFillColor(map_rend_.underlayer_color).
               SetStrokeWidth(map_rend_.underlayer_width).SetStrokeLineCap(StrokeLineCap::ROUND).SetStrokeLineJoin(StrokeLineJoin::ROUND);
-        result.Add(move(text1));
-        Text text2;
-        text2.SetPosition(text_coord).SetOffset(Point(map_rend_.stop_label_offset.x, map_rend_.stop_label_offset.y)).SetFontSize(map_rend_.stop_label_font_size).SetFontFamily("Verdana"s).SetData(stopptr->name).SetFillColor("black"s);
-        result.Add(move(text2));
+        result.Add(move(underlayer_stop_text));
+        Text stop_text;
+        stop_text.SetPosition(text_coord).SetOffset(Point(map_rend_.stop_label_offset.x, map_rend_.stop_label_offset.y)).
+                SetFontSize(map_rend_.stop_label_font_size).
+                SetFontFamily("Verdana"s).SetData(stopptr->name).SetFillColor("black"s);
+        result.Add(move(stop_text));
     }
 
     result.Render(out);

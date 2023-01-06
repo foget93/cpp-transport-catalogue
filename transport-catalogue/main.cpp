@@ -73,7 +73,7 @@ int main() {
                      "stat_requests": [
                        { "id": 1, "type": "Bus", "name": "114" },
                        { "id": 2, "type": "Stop", "name": "Ривьерский мост" },
-                       { "id": 3, "type": "Bus", "name": "114" }
+                       { "id": 3, "type": "Map" }
                      ]
                    })"s}; // "Map"
 
