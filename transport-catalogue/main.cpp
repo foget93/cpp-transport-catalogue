@@ -25,14 +25,13 @@ using namespace request;
 //    Print(json::Document{node}, out);
 //    return out.str();
 //}
-
-int main() {
 //    TransportCatalogue tc;
 //    InputReader ir;
 //    ir.ParseInput(cin);
 //    ir.ParseInput(cin);
 //    ir.Load(cout, tc); Input + Stat readers
 
+int main() {
     std::string str {R"( {
                      "base_requests": [
                        {

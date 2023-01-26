@@ -15,17 +15,22 @@ SOURCES += \
         stat_reader.cpp \
         svg.cpp \
         transport_catalogue.cpp \
-        json.cpp
+        json.cpp \
+        transport_router.cpp
 
 HEADERS += \
     domain.h \
     geo.h \
+    graph.h \
     input_reader.h \
     json_builder.h \
     json_reader.h \
     map_renderer.h \
+    ranges.h \
     request_handler.h \
+    router.h \
     stat_reader.h \
     svg.h \
     transport_catalogue.h \
-    json.h
+    json.h \
+    transport_router.h
