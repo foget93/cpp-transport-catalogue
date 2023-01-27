@@ -25,14 +25,13 @@ using namespace request;
 //    Print(json::Document{node}, out);
 //    return out.str();
 //}
-
-int main() {
 //    TransportCatalogue tc;
 //    InputReader ir;
 //    ir.ParseInput(cin);
 //    ir.ParseInput(cin);
 //    ir.Load(cout, tc); Input + Stat readers
 
+int main() {
     std::string str {R"( {
                      "base_requests": [
                        {
@@ -73,7 +72,7 @@ int main() {
                      "stat_requests": [
                        { "id": 1, "type": "Bus", "name": "114" },
                        { "id": 2, "type": "Stop", "name": "Ривьерский мост" },
-                       { "id": 3, "type": "Bus", "name": "114" }
+                       { "id": 3, "type": "Map" }
                      ]
                    })"s}; // "Map"
 

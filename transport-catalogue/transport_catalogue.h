@@ -41,7 +41,7 @@ public:
 
     std::set<std::string_view> GetBuses(std::string_view stop) const;
 
-    std::vector<const Bus*> GetAllBuses() const; // for print
+    std::vector<const Bus*> GetAllBuses() const; // for print перенести в request_handler
 
     void SetStopDistance(std::string_view stop1, uint64_t dist, std::string_view stop2);
 
