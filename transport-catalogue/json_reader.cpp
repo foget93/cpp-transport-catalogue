@@ -292,7 +292,9 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
             std::ostringstream os;
             map_rend.PrintRoad(catalogue.GetAllBuses(), os);
 
-            std::string image = os.str();
+            std::string image = os.str(); // картинка
+
+            std::cout << image; //
             MakeMapImageResponse(request_id, image, response);
         }
     }

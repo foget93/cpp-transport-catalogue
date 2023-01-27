@@ -78,7 +78,7 @@ int main() {
 
 
     std::istringstream sstream{str};
-    ProcessTransportCatalogueQuery(sstream, cout);
+    ProcessTransportCatalogueQuery(sstream/*cin*/, cout);
 //    const auto input_json = json::Load(sstream).GetRoot();
 //    //TransportCatalogue tc;
 //    const auto& base_request = input_json.AsMap().at("base_requests"s).AsArray();
