@@ -19,7 +19,7 @@ void TransportCatalogue::AddRoute(string_view number, RouteType type, std::vecto
         auto found_stop = GetStop(stop);
 
         if (found_stop != nullptr) {
-            result.stops.push_back(move(found_stop));
+            result.stops.push_back(std::move(found_stop));
         }
     }
 
@@ -32,7 +32,7 @@ void TransportCatalogue::AddRoute(string_view number, RouteType type, std::vecto
         }
     }
 
-    buses_.push_back(move(result));
+    buses_.push_back(std::move(result));
     busname_to_bus_[buses_.back().number] = &buses_.back();
 
     for (auto& stop : stops) {
@@ -79,6 +79,17 @@ std::vector<const Bus*> TransportCatalogue::GetAllBuses() const  {
     }
     return result;
 }
+
+std::vector<const Stop*> TransportCatalogue::GetAllStops() const {
+    vector<const Stop*> result;
+
+    for (const auto& [str, stop]: stopname_to_stop_) {
+        result.push_back(stop);
+    }
+
+    return result;
+}
+
 
 void TransportCatalogue::SetStopDistance(std::string_view stop1, uint64_t dist, std::string_view stop2) {
     auto p_stop1 = GetStop(stop1);

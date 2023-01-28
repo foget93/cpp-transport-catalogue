@@ -43,6 +43,8 @@ public:
 
     std::vector<const Bus*> GetAllBuses() const; // for print перенести в request_handler
 
+    std::vector<const Stop*> GetAllStops() const; //?????
+
     void SetStopDistance(std::string_view stop1, uint64_t dist, std::string_view stop2);
 
     uint64_t GetStopDistance(const Stop* stop1, const Stop* stop2) const;

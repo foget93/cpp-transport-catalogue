@@ -222,7 +222,7 @@ map_renderer::RenderSettings ParseRenderSettings(const json::Dict& settings) {
     std::vector<svg::Color> vec;
     for (auto& a: settings.at("color_palette"s).AsArray()) {
         auto x = JsonToColor(a);
-        vec.push_back(move(x));
+        vec.push_back(std::move(x));
     }
 
 
@@ -241,7 +241,7 @@ map_renderer::RenderSettings ParseRenderSettings(const json::Dict& settings) {
 
     render_settings.underlayer_color = JsonToColor(settings.at("underlayer_color"s));
     render_settings.underlayer_width = settings.at("underlayer_width"s).AsDouble();
-    render_settings.color_palette = move(vec);
+    render_settings.color_palette = std::move(vec);
 
     return render_settings;
 }
@@ -294,13 +294,13 @@ json::Node MakeStatResponse(TransportCatalogue& catalogue, const json::Array& re
 
             std::string image = os.str(); // картинка
 
-            std::cout << image; //
+            //std::cout << image; //
             MakeMapImageResponse(request_id, image, response);
         }
     }
 
     response.EndArray();
-    return std::move(response.Build());
+    return /*std::move(*/response.Build();
 }
 }
   // namespace request
