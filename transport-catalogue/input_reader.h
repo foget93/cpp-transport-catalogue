@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace transport_catalogue {
+namespace catalogue {
 
 namespace query {
 
@@ -25,7 +25,7 @@ struct Command {
     std::pair<std::string_view, std::string_view> coordinates;
     std::vector<std::pair<std::string_view, std::string_view>> distances;
     std::vector<std::string_view> route;
-    RouteType route_type = RouteType::DIRECT;
+    TypeRoute route_type = TypeRoute::DIRECT;
     std::string origin_command;
     std::string desc_command;
 

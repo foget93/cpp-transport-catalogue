@@ -1,47 +1,55 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
 #include "geo.h"
 
-namespace transport_catalogue {
+#include <string>
+#include <string_view>
+#include <set>
+#include <unordered_set>
+#include <deque>
+#include <optional>
 
-enum class RouteType {
-    DIRECT, // -
-    CIRCULAR // >
-};
+namespace catalogue {
 
-struct Stop {
-    std::string name;
-    geo::Coordinates coordinates;
-};
+	enum class TypeRoute {
+		CIRCLE,
+		DIRECT
+	};
 
-struct Bus {
-    std::string number;
-    std::vector<const Stop*> stops;
-    RouteType type;
-};
+	struct Stop {
+		std::string name;
+		geo::Coordinates coordinate;
+	};
 
+	struct Bus {
+		TypeRoute type_route;
+		std::string name;
+		std::deque<const Stop*> stops;
+	};
 
-struct BusStat {
-    size_t all_stops {0};
-    size_t unique_stops {0};
-    double distance {0.};
-    uint64_t real_distance {0};
-    double curvature {0.};
-};
+	struct BusInfo {
+		bool bus_is_existing = false;
+		std::string name = "unknown bus";
+		size_t number_stops = 0;
+		size_t unique_stops = 0;
+		double length_route = 0;
+		double curvature = 0;
+	};
 
-}//namespace transport_catalogue
+	struct StopInfo {
+		bool to_exist = false;
+		std::string name = "unknown stop";
+		std::unordered_set<const Bus*> buses;
+	};
 
-/*
- * В этом файле вы можете разместить классы/структуры, которые являются частью предметной области (domain)
- * вашего приложения и не зависят от транспортного справочника. Например Автобусные маршруты и Остановки.
- *
- * Их можно было бы разместить и в transport_catalogue.h, однако вынесение их в отдельный
- * заголовочный файл может оказаться полезным, когда дело дойдёт до визуализации карты маршрутов:
- * визуализатор карты (map_renderer) можно будет сделать независящим от транспортного справочника.
- *
- * Если структура вашего приложения не позволяет так сделать, просто оставьте этот файл пустым.
- *
- */
+	struct CompareBuses {
+	public:
+		bool operator()(const Bus* l, const Bus* r) const;
+	};
+
+	struct CompareStop {
+	public:
+		bool operator()(const Stop* l, const Stop* r) const;
+	};
+
+} // namespace catalogue

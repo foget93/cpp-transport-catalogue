@@ -1,45 +1,43 @@
 #pragma once
 
-#include "json_reader.h"
+#include <optional>
+#include <string_view>
+#include <unordered_set>
+#include <deque>
 
-namespace request {
+#include "domain.h"
+#include "transport_catalogue.h"
+#include "map_renderer.h"
+#include "transport_router.h"
 
-void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output);
+namespace catalogue {
 
-}
-/*
- * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
- * хотелось бы помещать ни в transport_catalogue, ни в json reader.
- *
- * В качестве источника для идей предлагаем взглянуть на нашу версию обработчика запросов.
- * Вы можете реализовать обработку запросов способом, который удобнее вам.
- *
- */
+    class RequestHandler {
+    public:
+        RequestHandler(const TransportCatalogue& db
+                      , const renderer::MapRenderer& renderer
+                      , const TransportRouter& router);
 
-// Класс RequestHandler играет роль Фасада, упрощающего взаимодействие JSON reader-а
-// с другими подсистемами приложения.
-// См. паттерн проектирования Фасад: https://ru.wikipedia.org/wiki/Фасад_(шаблон_проектирования)
+        std::optional<BusInfo> GetBusStat(const std::string_view& bus_name) const;
 
-/*
-class RequestHandler {
-public:
-    // MapRenderer понадобится в следующей части итогового проекта
-    RequestHandler(const transport_catalogue::TransportCatalogue& db);//, const renderer::MapRenderer& renderer);
+        const std::unordered_set<const Bus*> GetBusesByStop(const std::string_view& stop_name) const;
 
-    // Возвращает информацию о маршруте (запрос Bus)
-    std::optional<transport_catalogue::BusStat> GetBusStat(const std::string_view& bus_name) const;
+        const std::deque<const Stop*>& GetStopsByBus(const std::string_view bus_name) const;
 
-    // Возвращает маршруты, проходящие через
-    const std::unordered_set<const transport_catalogue::Bus*>* GetBusesByStop(const std::string_view& stop_name) const;
+        const std::unordered_set<const Bus*> GetAllBuses() const;
 
-    // Этот метод будет нужен в следующей части итогового проекта
-    //svg::Document RenderMap() const;
+        const std::unordered_set<const Stop*> GetAllStops() const;
 
-private:
-    // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
-    const transport_catalogue::TransportCatalogue& db_;
-    //const renderer::MapRenderer& renderer_;
-};*/
+        svg::Document RenderMap(const renderer::RenderSettings& render_settings,
+            const std::set< const Bus*, CompareBuses >& buses) const;
 
-//переделать после того как перегоню мягкие дедлайны, дай бог
+        std::optional<graph::Router<double>::RouteInfo> BuildRoute(
+            std::string_view stop_from, std::string_view stop_to) const;
 
+    private:
+        const TransportCatalogue& db_;
+        const renderer::MapRenderer& renderer_;
+        const TransportRouter& router_;
+    };
+
+} // namespace catalogueS

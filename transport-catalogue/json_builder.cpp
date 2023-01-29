@@ -1,152 +1,128 @@
 #include "json_builder.h"
 
+#include <string>
+#include <vector>
+
+using namespace std;
+
 namespace json {
 
-    Node Builder::Build() const {
-        if (is_root_empty_ || !nodes_stack_.empty()) {
-            throw std::logic_error("Json is not ready for build");
-        }
-        return root_;
-    }
+	//====================  KeyItemContext  ==================================
 
-    DictItemContext Builder::StartDict() {
-        return DictItemContext(Value(Dict {}, true));
-    }
+	KeyItemContext::KeyItemContext(Builder& builder)
+		: builder_(builder) {
+	}
 
-    Builder& Builder::EndDict() {
-        if (!is_root_empty_ && nodes_stack_.empty()) {
-            throw std::logic_error("Json is ready now");
-        }
-        if (key_.has_value()) {
-            throw std::logic_error("Dict key without value");
-        } else if (nodes_stack_.empty() || !nodes_stack_.top()->IsDict()) {
-            throw std::logic_error("Dict end without start");
-        }
-        nodes_stack_.pop();
-        return *this;
-    }
+	DictItemContext KeyItemContext::Value(Node::Value value) {
+		return DictItemContext{ builder_.Value(std::move(value)) };
+	}
 
-    ArrayItemContext Builder::StartArray() {
-        return ArrayItemContext(Value(Array {}, true));
-    }
+	DictItemContext KeyItemContext::StartDict() {
+		return builder_.StartDict();
+	}
 
-    Builder& Builder::EndArray() {
-        if (!is_root_empty_ && nodes_stack_.empty()) {
-            throw std::logic_error("Json is ready now");
-        }
-        if (nodes_stack_.empty() || !nodes_stack_.top()->IsArray()) {
-            throw std::logic_error("Array end without start");
-        }
-        nodes_stack_.pop();
-        return *this;
-    }
+	ArrayItemContext KeyItemContext::StartArray() {
+		return builder_.StartArray();
+	}
 
-    KeyItemContext Builder::Key(const std::string &key) {
-        if (!is_root_empty_ && nodes_stack_.empty()) {
-            throw std::logic_error("Json is ready now");
-        }
-        if (nodes_stack_.empty() || !nodes_stack_.top()->IsDict() || key_.has_value()) {
-            throw std::logic_error("Key is in an unexpected place");
-        }
-        key_ = key;
-        return KeyItemContext(*this);
-    }
+	//====================  DictItemContext  =================================
 
-    Builder& Builder::Value(const Node & value, bool is_start) {
-        if (!is_root_empty_ && nodes_stack_.empty()) {
-            throw std::logic_error("Json is ready now");
-        }
+	DictItemContext::DictItemContext(Builder& builder) 
+		: builder_(builder) {
+	}
 
-        if (!(is_root_empty_ || key_.has_value() || nodes_stack_.top()->IsArray())) {
-            throw std::logic_error("Bad place for new json element");
-        }
+	KeyItemContext DictItemContext::Key(std::string key) {
+		return builder_.Key(std::move(key));
+	}
 
-        if (is_root_empty_) {
-            root_ = value;
-            is_root_empty_ = false;
-            if (is_start && (value.IsDict() || value.IsArray())) {
-                nodes_stack_.push(&root_);
-            }
-        } else if (!nodes_stack_.empty() && nodes_stack_.top()->IsDict()) {
-            Dict& dict = const_cast<Dict&>(nodes_stack_.top()->AsDict());
-            auto new_val = dict.insert({*key_, value});
-            if (new_val.second && is_start && (value.IsDict() || value.IsArray())) {
-                nodes_stack_.push(&(new_val.first->second));
-            }
-            key_.reset();
-        } else if (!nodes_stack_.empty() && nodes_stack_.top()->IsArray()) {
-            Array& arr = const_cast<Array&>(nodes_stack_.top()->AsArray());
-            arr.push_back(value);
-            if (is_start && (value.IsDict() || value.IsArray())) {
-                nodes_stack_.push(&arr.back());
-            }
-        }
-        return *this;
-    }
+	Builder& DictItemContext::EndDict() {
+		return builder_.EndDict();
+	}
 
-    ////////////////     Context        //////////////
+	//====================  ArrayItemContext  ====================================
 
+	ArrayItemContext::ArrayItemContext(Builder& builder) 
+		: builder_(builder) {
+	}
 
-    Context::Context(Builder& builder): builder_(builder) {}
+	ArrayItemContext ArrayItemContext::Value(Node::Value value) {
+		return ArrayItemContext{ builder_.Value(std::move(value)) };
+	}
 
-    ////////////////     KeyValueContext        //////////////
+	DictItemContext ArrayItemContext::StartDict() {
+		return builder_.StartDict();
+	}
 
-    KeyValueContext::KeyValueContext(Builder& builder) : Context(builder) {}
+	ArrayItemContext ArrayItemContext::StartArray() {
+		return builder_.StartArray();
+	}
 
-    KeyItemContext KeyValueContext::Key(const std::string& key) {
-        return KeyItemContext(builder_.Key(key));
-    }
+	Builder& ArrayItemContext::EndArray() {
+		return builder_.EndArray();
+	}
 
-    Builder& KeyValueContext::EndDict() {
-        return builder_.EndDict();
-    }
+	//====================  Builder  =========================================
 
-    ////////////////     KeyItemContext        //////////////
+	KeyItemContext Builder::Key(std::string key) {
+		if (nodes_stack_.empty() || !nodes_stack_.back()->IsDict()) {
+			throw std::logic_error("Failed Key(): the last element of the vector is not a dictionary"s);
+		}
+		nodes_stack_.emplace_back(&std::get<Dict>(nodes_stack_.back()->GetNoConstValue())[key]);
+		return KeyItemContext{ *this };
+	}
 
-    KeyItemContext::KeyItemContext(Builder& builder) : Context(builder) {}
+	Builder& Builder::Value(Node::Value value) {
+		if (nodes_stack_.empty() && std::holds_alternative<nullptr_t>(root_.GetValue())) {
+			root_ = value;
+		}
+		else if (!nodes_stack_.empty() && nodes_stack_.back()->IsNull()) {
+			nodes_stack_.back()->GetNoConstValue() = value;
+			nodes_stack_.erase(nodes_stack_.end() - 1);
+		}
+		else if (!nodes_stack_.empty() && nodes_stack_.back()->IsArray()) {
+			std::get<Array>(nodes_stack_.back()->GetNoConstValue()).push_back(value);
+		}
+		else {
+			throw std::logic_error("Failed Value()"s);
+		}
 
-    DictItemContext KeyItemContext::StartDict() {
-        return builder_.StartDict();
-    }
+		return *this;
+	}
 
-    ArrayItemContext KeyItemContext::StartArray() {
-        return builder_.StartArray();
-    }
+	Node Builder::Build() const {
+		if (nodes_stack_.empty() && !root_.IsNull()) {
+			return root_;
+		}
+		throw std::logic_error("Failed Build()"s);
+	}
 
-    KeyValueContext KeyItemContext::Value(const Node& value, bool is_start) {
-        return KeyValueContext(builder_.Value(value, is_start));
-    }
+	DictItemContext Builder::StartDict() {
+		return DictItemContext{ this->StartContainer(Dict{}) };
+	}
 
-    ////////////////     DictItemContext        //////////////
+	Builder& Builder::EndDict() {
+		if (!nodes_stack_.empty() && nodes_stack_.back()->IsDict()) {
+			nodes_stack_.erase(nodes_stack_.end() - 1);
+		}
+		else {
+			throw std::logic_error("Failed EndDict()"s);
+		}
 
-    DictItemContext::DictItemContext(Builder& builder) : Context(builder) {}
+		return *this;
+	}
 
-    KeyItemContext DictItemContext::Key(const std::string& key) const {
-        return KeyItemContext(builder_.Key(key)); //
-    }
+	ArrayItemContext Builder::StartArray() {
+		return ArrayItemContext{ this->StartContainer(Array{}) };
+	}
 
-    Builder& DictItemContext::EndDict() const {
-        return builder_.EndDict();
-    }
+	Builder& Builder::EndArray() {
+		if (!nodes_stack_.empty() && nodes_stack_.back()->IsArray()) {
+			nodes_stack_.erase(nodes_stack_.end() - 1);
+		}
+		else {
+			throw std::logic_error("Failed EndArray()"s);
+		}
 
-    ////////////////     ArrayItemContext       //////////////
-
-    ArrayItemContext::ArrayItemContext(Builder& builder) : Context(builder) {}
-
-    DictItemContext ArrayItemContext::StartDict() {
-        return builder_.StartDict();
-    }
-
-    ArrayItemContext ArrayItemContext::StartArray() {
-        return builder_.StartArray();
-    }
-
-    Builder& ArrayItemContext::EndArray() {
-        return builder_.EndArray();
-    }
-
-    ArrayItemContext ArrayItemContext::Value(const Node& value, bool is_start) {
-        return ArrayItemContext(builder_.Value(value, is_start));
-    }
-
-} // namespace json
+		return *this;
+	}
+}

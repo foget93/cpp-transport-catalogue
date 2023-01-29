@@ -1,74 +1,87 @@
 #pragma once
 
-#include <stack>
-#include <optional>
-
 #include "json.h"
 
+#include <string>
+#include <vector>
+
 namespace json {
-    //class KeyValueContext;
-    class KeyItemContext;
-    class DictItemContext;
-    class ArrayItemContext;
 
-    class Builder {
-    public:
-        Builder() = default;
-        Node Build() const;
-        DictItemContext/*Builder*/ StartDict();
-        Builder& EndDict();
-        ArrayItemContext/*Builder*/ StartArray();
-        Builder& EndArray();
-        KeyItemContext/*Builder*/ Key(const std::string & key);
-        Builder& Value(const Node& value, bool is_start = false);
+	class DictItemContext;
+	class KeyItemContext;
+	class ArrayItemContext;
 
-    private:
-        Node root_ = nullptr;
-        std::stack<Node*> nodes_stack_;
+	class Builder {
+	public:
+		Builder() = default;
 
-        bool is_root_empty_ = true;
-        std::optional<std::string> key_;
-    };
+		Builder& EndDict();
+		Builder& Value(Node::Value value);
+		Builder& EndArray();
 
-// ================================================================
+		DictItemContext StartDict();
+		ArrayItemContext StartArray();
+		KeyItemContext Key(std::string key);
 
-    class Context {
-    public:
-        explicit Context(Builder& builder);
+		Node Build() const;
+	private:
+		Node root_;
+		std::vector<Node*> nodes_stack_;
 
-    protected:
-        Builder& builder_;
-    };
+		template<typename Container>
+		Builder& StartContainer(Container container);
+	};
 
-    class KeyValueContext final : public Context {
-    public:
-        explicit KeyValueContext(Builder& builder);
-        KeyItemContext Key(const std::string& key);
-        Builder& EndDict();
-    };
+	// 1
+	class KeyItemContext {
+	public:
+		KeyItemContext(Builder& builder);
+		DictItemContext Value(Node::Value value);
+		DictItemContext StartDict();
+		ArrayItemContext StartArray();
+	private:
+		Builder& builder_;
+	};
 
-    class KeyItemContext final : public Context {
-    public:
-        explicit KeyItemContext(Builder& builder);
-        DictItemContext StartDict();
-        ArrayItemContext StartArray();
-        KeyValueContext Value(const Node& value, bool is_start = false);
-    };
+	// 2
+	class DictItemContext {
+	public:
+		DictItemContext(Builder& builder);
+		KeyItemContext Key(std::string key);
+		Builder& EndDict();
+	private:
+		Builder& builder_;
+	};
 
-    class DictItemContext final : public Context {
-    public:
-        explicit DictItemContext(Builder& builder);
-        KeyItemContext Key(const std::string& key) const;
-        Builder& EndDict() const;
-    };
+	// 3
+	class ArrayItemContext {
+	public:
+		ArrayItemContext(Builder& builder);
+		ArrayItemContext Value(Node::Value value);
+		DictItemContext StartDict();
+		ArrayItemContext StartArray();
+		Builder& EndArray();
+	private:
+		Builder& builder_;
+	};
 
-    class ArrayItemContext final : public Context {
-    public:
-        explicit ArrayItemContext(Builder& builder);
-        DictItemContext StartDict();
-        ArrayItemContext StartArray();
-        Builder& EndArray();
-        ArrayItemContext Value(const Node& value, bool is_start = false);
-    };
+	template<typename Container>
+	Builder& Builder::StartContainer(Container container) {
+		if (nodes_stack_.empty() && std::holds_alternative<nullptr_t>(root_.GetValue())) {
+			root_ = container;
+			nodes_stack_.push_back(&root_);
+		}
+		else if (!nodes_stack_.empty() && nodes_stack_.back()->IsNull()) {
+			nodes_stack_.back()->GetNoConstValue() = container;
+		}
+		else if (!nodes_stack_.empty() && nodes_stack_.back()->IsArray()) {
+			std::get<Array>(nodes_stack_.back()->GetNoConstValue()).push_back(container);
+			nodes_stack_.emplace_back(&(std::get<Array>(nodes_stack_.back()->GetNoConstValue()).back()));
+		}
+		else {
+			throw std::logic_error("Failed StartArray()");
+		}
 
-} // namespace json
+		return *this;
+	}
+}

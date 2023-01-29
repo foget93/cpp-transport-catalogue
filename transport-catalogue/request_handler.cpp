@@ -1,34 +1,49 @@
-﻿#include "request_handler.h"
+#include "request_handler.h"
 
-#include <string>
+#include <string_view>
+#include <deque>
 
-namespace request {
+namespace catalogue {
 
-using namespace std::literals;
-using namespace transport_catalogue;
+	RequestHandler::RequestHandler(const catalogue::TransportCatalogue& db,
+		const renderer::MapRenderer& renderer, const TransportRouter& router)
+		: db_(db), renderer_(renderer), router_(router) {
+	}
 
-void ProcessTransportCatalogueQuery(std::istream& input, std::ostream& output) {
-    const auto input_json = json::Load(input).GetRoot();
+	std::optional<BusInfo> RequestHandler::GetBusStat(
+		const std::string_view& bus_name) const {
 
-    // Step 1. Form catalogue, base_requests
-    const auto& base_requests = input_json.AsDict().at("base_requests"s).AsArray();
-    auto transport_catalogue = ProcessBaseRequest(base_requests);
+		return db_.GetBusInfo(bus_name);
+	}
 
-    // Step 2. Parse rendering settings
-    const auto& render_settings_json = input_json.AsDict().at("render_settings"s).AsDict();
-    const map_renderer::RenderSettings& render_settings = ParseRenderSettings(render_settings_json);
+	const std::unordered_set<const Bus*> RequestHandler::GetBusesByStop(
+		const std::string_view& stop_name) const {
 
-    // вывод в output
-//    map_renderer::MapRenderer map_rend(render_settings);
-//    std::vector<const transport_catalogue::Bus* > bus_ptrs = transport_catalogue.GetAllBuses();
-//    map_rend.PrintRoad(bus_ptrs, output); //простой вывод в stdout
+		const std::unordered_set<const Bus*> a = db_.GetStopInfo(stop_name).buses;
 
+		return a;
+	}
 
-     //Step 3. Form response
-    const auto& stat_requests = input_json.AsDict().at("stat_requests"s).AsArray();
-    auto response = MakeStatResponse(transport_catalogue, stat_requests, render_settings);
+	const std::deque<const Stop*>& RequestHandler::GetStopsByBus(const std::string_view bus_name) const {
+		return db_.FindBus(bus_name)->stops;
+	}
 
-    json::Print(json::Document{std::move(response)}, output);
-}
+	const std::unordered_set<const Bus*> RequestHandler::GetAllBuses() const {
+		return db_.GetAllBuses();
+	}
 
-}
+	const std::unordered_set<const Stop*> RequestHandler::GetAllStops() const {
+		return db_.GetAllStops();
+	}
+
+	svg::Document RequestHandler::RenderMap(const renderer::RenderSettings& render_settings,
+		const std::set< const Bus*, CompareBuses >& buses) const {
+		return renderer_.RenderMap(render_settings, buses);
+	}
+
+	std::optional<graph::Router<double>::RouteInfo> RequestHandler::BuildRoute(
+		std::string_view stop_from, std::string_view stop_to) const {
+		return router_.BuildRoute(stop_from, stop_to);
+	}
+
+} // namespace catalogue
