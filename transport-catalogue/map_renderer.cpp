@@ -35,9 +35,7 @@ namespace catalogue {
                 render_settings.padding
             };
             // 3.
-            svg::Document document = std::move(
-                CreateVisualization(render_settings, buses, map_buses_to_geo_coords_of_stops, proj)
-            );
+            svg::Document document = CreateVisualization(render_settings, buses, map_buses_to_geo_coords_of_stops, proj);
             return document;
         }
 
@@ -128,17 +126,13 @@ namespace catalogue {
                                                  bus->stops[0]->coordinate.lng };
                 geo::Coordinates route_end = { bus->stops[(bus->stops.size())/2]->coordinate.lat,
                                                bus->stops[(bus->stops.size())/2]->coordinate.lng };
-                auto [background_begin, title_begin] = std::move(
-                    CreateBackgroundAndTitleForRoute(
-                        render_settings, proj(route_begin), bus->name, count)
-                );
+                auto [background_begin, title_begin] = CreateBackgroundAndTitleForRoute(
+                        render_settings, proj(route_begin), bus->name, count);
                 document.Add(background_begin);
                 document.Add(title_begin);
                 if (bus->type_route == TypeRoute::DIRECT && route_begin != route_end) {
-                    auto [background_end, title_end] = std::move(
-                        CreateBackgroundAndTitleForRoute(
-                            render_settings, proj(route_end), bus->name, count)
-                    );
+                    auto [background_end, title_end] =
+                        CreateBackgroundAndTitleForRoute(render_settings, proj(route_end), bus->name, count);
                     document.Add(background_end);
                     document.Add(title_end);
                 }
