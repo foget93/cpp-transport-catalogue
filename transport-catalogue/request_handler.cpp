@@ -1,49 +1,33 @@
 #include "request_handler.h"
 
-#include <string_view>
-#include <deque>
+#include <algorithm>
 
-namespace catalogue {
+namespace transport_catalogue {
 
-	RequestHandler::RequestHandler(const catalogue::TransportCatalogue& db,
-		const renderer::MapRenderer& renderer, const TransportRouter& router)
-		: db_(db), renderer_(renderer), router_(router) {
-	}
+    namespace request_handler {
 
-	std::optional<BusInfo> RequestHandler::GetBusStat(
-		const std::string_view& bus_name) const {
+        RequestHandler::RequestHandler(TransportCatalogue& db, renderer::MapRenderer& renderer, transport_router::TransportRouter& router)
+            : db_(db)
+            , renderer_(renderer)
+            , router_(router) {
+        }
 
-		return db_.GetBusInfo(bus_name);
-	}
+        std::optional<domain::BusStat> RequestHandler::GetBusStat(const std::string_view& bus_name) const {
+            return db_.GetBusStat(bus_name);
+        }
 
-	const std::unordered_set<const Bus*> RequestHandler::GetBusesByStop(
-		const std::string_view& stop_name) const {
+        const std::unordered_set<const domain::Bus*>* RequestHandler::GetBusesByStop(const std::string_view& stop_name) const {
+            return db_.GetBusesByStop(stop_name);
+        }
 
-		const std::unordered_set<const Bus*> a = db_.GetStopInfo(stop_name).buses;
+        svg::Document RequestHandler::RenderMap(std::vector<std::pair<const domain::Stop*, std::size_t>>& stops_to_bus_counts, std::vector<const domain::Bus*>& buses) const {
+            return renderer_.RenderMap(stops_to_bus_counts, buses);
+        }
 
-		return a;
-	}
+        std::optional<domain::RouteStat> RequestHandler::GetRoute(const std::string_view from, const std::string_view to) const {
+            return router_.GetRoute(from, to);
+        }
 
-	const std::deque<const Stop*>& RequestHandler::GetStopsByBus(const std::string_view bus_name) const {
-		return db_.FindBus(bus_name)->stops;
-	}
+    }
 
-	const std::unordered_set<const Bus*> RequestHandler::GetAllBuses() const {
-		return db_.GetAllBuses();
-	}
-
-	const std::unordered_set<const Stop*> RequestHandler::GetAllStops() const {
-		return db_.GetAllStops();
-	}
-
-	svg::Document RequestHandler::RenderMap(const renderer::RenderSettings& render_settings,
-		const std::set< const Bus*, CompareBuses >& buses) const {
-		return renderer_.RenderMap(render_settings, buses);
-	}
-
-	std::optional<graph::Router<double>::RouteInfo> RequestHandler::BuildRoute(
-		std::string_view stop_from, std::string_view stop_to) const {
-		return router_.BuildRoute(stop_from, stop_to);
-	}
-
-} // namespace catalogue
+}

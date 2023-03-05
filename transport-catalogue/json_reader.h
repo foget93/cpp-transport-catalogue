@@ -1,59 +1,96 @@
 #pragma once
 
-#include "domain.h"
+#include <iostream>
+#include <list>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
+
 #include "json.h"
-#include "transport_catalogue.h"
 #include "request_handler.h"
-#include "map_renderer.h"
-#include "router.h"
 #include "transport_router.h"
+//#include <transport_catalogue.pb.h>
 
-#include <variant>
+namespace transport_catalogue {
 
-namespace catalogue {
+    namespace json_reader {
 
-	struct Data {
-		json::Document base_requests;
-		json::Document stat_requests;
-		renderer::RenderSettings render_settings;
-		RoutingSettings routing_settings;
-	};
+        struct Response;
+        struct NotFound;
+        struct Map;
+        struct StopStat;
+        struct BusStat;
+        struct RouteStat;
 
-	class JSONReader {
-	public:
-		JSONReader(
-			TransportCatalogue& catalogue,
-			renderer::MapRenderer& map_renderer
-		);
+        struct RouteItemConverter {
+            json::Dict operator()(const domain::BusRouteItem& bus) const;
+            json::Dict operator()(const domain::WaitRouteItem& wait) const;
+        };
 
-		Data ReadJSON(std::istream& input) const;
+        using JsonResponse = std::variant<NotFound, Map, StopStat, BusStat, RouteStat>;
 
-		void BuildDataBase(const Data& data);
+        struct Response {
+            int request_id = 0;
+        };
 
-		json::Document GenerateAnswer(const TransportRouter& transport_router,
-									  const json::Document& stat_requests) const;
+        struct NotFound : public Response {};
 
-	private:
-		TransportCatalogue& catalogue_;
-		renderer::MapRenderer& map_renderer_;
-		renderer::RenderSettings render_settings_;
+        struct Map : public Response {
+            svg::Document doc;
+        };
 
-		svg::Color ReadUnderlayerColor(const std::map<std::string, json::Node>& s) const;
-		std::vector<svg::Color> ReadColorPalette(const std::map<std::string, json::Node>& s) const;
-		renderer::RenderSettings CreateRenderSettings(const json::Node& settings) const;
-		RoutingSettings CreateRoutingSettings(const json::Node& input_node) const;
+        struct StopStat : public Response {
+            const std::unordered_set<const domain::Bus*>* buses;
+        };
 
-		void AddNameAndCoordinatesOfStop(const json::Node& node);
-		void AddDistanceBetweenStops(const json::Node& stop_from);
-		void AddJsonBus(const json::Node& node);
+        struct BusStat : public Response {
+            std::optional<domain::BusStat> bus_stat;
+        };
 
-		json::Node GenerateAnswerBus(const json::Node& request) const;
-		json::Node GenerateAnswerStop(const json::Node& request) const;
-		json::Node GenerateAnswerMap(const int id) const;
-		json::Node GenerateAnswerRoute(const TransportRouter& router,	
-			const json::Node& request) const;
+        struct RouteStat : public Response {
+            std::optional<domain::RouteStat> route_stat;
+        };
 
-		json::Node ConvertEdgeInfo(const TransportRouter& router, const EdgeId edge_id) const;
-	};
+        struct ResponseConverter {
+            json::Dict operator()(const NotFound& response) const;
+            json::Dict operator()(const Map& response) const;
+            json::Dict operator()(const StopStat& response) const;
+            json::Dict operator()(const BusStat& response) const;
+            json::Dict operator()(const RouteStat& response) const;
+        };
 
-} // namespace catalogue
+        class JsonReader final {
+        public:
+            explicit JsonReader(
+                request_handler::RequestHandler& handler,
+                TransportCatalogue& db,
+                renderer::MapRenderer& renderer,
+                transport_router::TransportRouter& router
+            );
+            void ProcessRequests(std::istream& input = std::cin, std::ostream& output = std::cout);
+            void MakeBase(std::istream& input = std::cin);
+        private:
+            request_handler::RequestHandler& handler_;
+            TransportCatalogue& db_;
+            renderer::MapRenderer& renderer_;
+            transport_router::TransportRouter& router_;
+
+            void UpdateDatabase(const json::Document& doc);
+            void AddStops(const std::list<const json::Node*>& stop_nodes);
+            void AddBuses(const std::list<const json::Node*>& bus_nodes);
+            renderer::RenderSettings GetRenderSettings(const json::Dict& settings_dict) const;
+            json::Dict GetMap(const json::Dict& stop_request) const;
+            json::Dict GetStopStat(const json::Dict& stop_request) const;
+            json::Dict GetBusStat(const json::Dict& bus_request) const;
+            json::Dict GetRoute(const json::Dict& route_request) const;
+            static svg::Color GetColor(const json::Node& color_node);
+            transport_router::RoutingSettings GetRoutingSettings(const json::Dict& settings_dict) const;
+            void SerializeTransportCatalogue(const std::string& file_name) const;
+            void DeserializeTransportCatalogue(const std::string& file_name) const;
+        };
+
+    }
+
+}

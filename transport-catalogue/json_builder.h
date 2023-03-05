@@ -2,86 +2,89 @@
 
 #include "json.h"
 
+#include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace json {
 
-	class DictItemContext;
-	class KeyItemContext;
-	class ArrayItemContext;
+    class Builder {
+    private:
+        class Context;
+        class ArrayItemContext;
+        class DictItemContext;
+        class KeyContext;
+        class ArrayValueContext;
 
-	class Builder {
-	public:
-		Builder() = default;
+        class Context {
+        protected:
+            Context(Builder& builder);
+            Builder& builder_;
+        };
 
-		Builder& EndDict();
-		Builder& Value(Node::Value value);
-		Builder& EndArray();
+        class DictItemContext : private Context {
+        public:
+            DictItemContext(Builder& builder);
+            KeyContext Key(const std::string& key);
+            Builder& EndDict();
+        };
 
-		DictItemContext StartDict();
-		ArrayItemContext StartArray();
-		KeyItemContext Key(std::string key);
+        class ArrayItemContext : private Context {
+        public:
+            ArrayItemContext(Builder& builder);
+            ArrayValueContext Value(json::Node value);
+            DictItemContext StartDict();
+            ArrayItemContext StartArray();
+            Builder& EndArray();
+        };
 
-		Node Build() const;
-	private:
-		Node root_;
-		std::vector<Node*> nodes_stack_;
+        class KeyContext : private Context {
+        public:
+            KeyContext(Builder& builder);
+            DictItemContext Value(json::Node value);
+            DictItemContext StartDict();
+            ArrayItemContext StartArray();
+        };
 
-		template<typename Container>
-		Builder& StartContainer(Container container);
-	};
+        class ArrayValueContext : private Context {
+        public:
+            ArrayValueContext(Builder& builder);
+            ArrayValueContext Value(json::Node value);
+            DictItemContext StartDict();
+            ArrayItemContext StartArray();
+            Builder& EndArray();
+        };
+    public:
+        enum class NodeType {
+            START,
+            VALUE
+        };
+        DictItemContext StartDict();
+        ArrayItemContext StartArray();
+        Builder& EndDict();
+        Builder& EndArray();
+        KeyContext Key(const std::string& key);
+        Builder& Value(json::Node value);
+        json::Node Build();
+    private:
+        json::Node root_;
+        std::vector<json::Node*> nodes_stack_;
 
-	// 1
-	class KeyItemContext {
-	public:
-		KeyItemContext(Builder& builder);
-		DictItemContext Value(Node::Value value);
-		DictItemContext StartDict();
-		ArrayItemContext StartArray();
-	private:
-		Builder& builder_;
-	};
+        void CheckReady() const;
+        Builder& AddNode(json::Node node, NodeType node_type);
 
-	// 2
-	class DictItemContext {
-	public:
-		DictItemContext(Builder& builder);
-		KeyItemContext Key(std::string key);
-		Builder& EndDict();
-	private:
-		Builder& builder_;
-	};
+        template <typename NodeType>
+        Builder& EndNode() {
+            using namespace std::literals;
+            CheckReady();
+            if ((std::is_same_v<NodeType, json::Dict> && !nodes_stack_.back()->IsDict()) ||
+                (std::is_same_v<NodeType, json::Array> && !nodes_stack_.back()->IsArray())) {
+                throw std::logic_error("End type must match start type"s);
+            }
+            nodes_stack_.pop_back();
+            return *this;
+        }
+    };
 
-	// 3
-	class ArrayItemContext {
-	public:
-		ArrayItemContext(Builder& builder);
-		ArrayItemContext Value(Node::Value value);
-		DictItemContext StartDict();
-		ArrayItemContext StartArray();
-		Builder& EndArray();
-	private:
-		Builder& builder_;
-	};
-
-	template<typename Container>
-	Builder& Builder::StartContainer(Container container) {
-		if (nodes_stack_.empty() && std::holds_alternative<nullptr_t>(root_.GetValue())) {
-			root_ = container;
-			nodes_stack_.push_back(&root_);
-		}
-		else if (!nodes_stack_.empty() && nodes_stack_.back()->IsNull()) {
-			nodes_stack_.back()->GetNoConstValue() = container;
-		}
-		else if (!nodes_stack_.empty() && nodes_stack_.back()->IsArray()) {
-			std::get<Array>(nodes_stack_.back()->GetNoConstValue()).push_back(container);
-			nodes_stack_.emplace_back(&(std::get<Array>(nodes_stack_.back()->GetNoConstValue()).back()));
-		}
-		else {
-			throw std::logic_error("Failed StartArray()");
-		}
-
-		return *this;
-	}
 }
