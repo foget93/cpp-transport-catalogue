@@ -1,0 +1,8 @@
+сначала попробывать собрать проект смейком, получить ошибку и в папке билд 
+cmake . -DCMAKE_PREFIX_PATH=/Users/dmitriy_makarov/yandex_practikum/protobuf-all/protobuf
+(далее можно открыть qt creator проект)
+
+для распаковки протофайлов с помощью библы протобаф
+/Users/dmitriy_makarov/yandex_practikum/protobuf-all/protobuf/bin/protoc --cpp_out . transport_router.proto
+
+/Users/dmitriy_makarov/yandex_practikum/protobuf-all/protobuf/ - путь к собранной библиотеке

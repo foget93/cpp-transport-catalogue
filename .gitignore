@@ -41,5 +41,8 @@ transport_catalogue
 .qtc_clangd
 *.json
 *.svg
-*.txt
+
+.DS_Store 
+*.user
+
 

@@ -11,7 +11,7 @@
 #include "json.h"
 #include "request_handler.h"
 #include "transport_router.h"
-//#include <transport_catalogue.pb.h>
+#include <transport_catalogue.pb.h>
 
 namespace transport_catalogue {
 

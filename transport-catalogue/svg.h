@@ -277,8 +277,8 @@ namespace svg {
 
     template <typename Owner>
     Owner& PathProps<Owner>::AsOwner() {
-        // static_cast áåçîïàñíî ïðåîáðàçóåò *this ê Owner&,
-        // åñëè êëàññ Owner  íàñëåäíèê PathProps
+        // static_cast безопасно преобразует *this к Owner&,
+        // если класс Owner — наследник PathProps
         return static_cast<Owner&>(*this);
     }
 }  // namespace svg
