@@ -1,90 +1,87 @@
 #pragma once
 
+#include "domain.h"
 #include "transport_catalogue.h"
 #include "graph.h"
 #include "router.h"
 
-#include <memory>
-#include <vector>
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
 #include <unordered_map>
-#include <optional>
+#include <variant>
+#include <vector>
 
-namespace catalogue {
+namespace transport_catalogue {
 
-	using EdgeId = size_t;
-	using VertexId = size_t;
+    namespace transport_router {
 
-	struct EdgeWaitInfo {
-		const Stop* stop = nullptr;
-		double weight = 0;
-	};
+        struct RoutingSettings {
+            std::uint32_t bus_wait_time_min = 6u;
+            double bus_velocity_kmh = 40.0;
+        };
 
-	struct EdgeBusInfo {
-		const Bus* bus = nullptr;
-		double weight = 0;
-		size_t span_count = 0;
-	};
+        struct BusRoute {
+            std::string_view bus_name;
+            std::string_view from;
+            std::string_view to;
+            std::size_t distance_m = 0u;
+            std::size_t span_count = 0u;
+            std::optional<double> weight;
+        };
 
-	using EdgeInfo = std::variant<EdgeWaitInfo, EdgeBusInfo>;
+        struct RouterParams {
+            std::vector<std::string_view> stop_names;
+            std::vector<BusRoute> bus_routes;
+        };
 
-	struct RoutingSettings {
-		double bus_velocity = 1000; // meters per minute
-		double bus_wait_time = 6; // minute
-	};
+        class TransportRouter {
+        private:
+            static constexpr double TO_MINUTES = 0.06;
 
-	struct PairVertexesId {
-		VertexId begin_wait;
-		VertexId end_wait;
-	};
+            using Graph = graph::DirectedWeightedGraph<double>;
 
-	class TransportRouter {
-		using VertexId = size_t;
-		using Graph = graph::DirectedWeightedGraph<double>;
-		using Router = graph::Router<double>;
-	
-	public:
-		TransportRouter(const TransportCatalogue& catalogue, RoutingSettings routing_settings);
+            struct VertexInfo {
+                std::size_t start_waiting_id;
+                std::size_t stop_waiting_id;
+            };
 
-		void BuildGraphAndRouter();
+        public:
+            enum class Type {
+                Bus,
+                Wait
+            };
 
-		std::optional<graph::Router<double>::RouteInfo> BuildRoute(
-			std::string_view stop_from, std::string_view stop_to) const;
+            struct EdgeInfo {
+                Type type;
+                graph::Edge<double> edge;
+                std::string_view from;
+                std::string_view to;
+                std::optional<std::string_view> bus_name;
+                std::size_t span_count = 0u;
+            };
 
-		const EdgeInfo& GetEdgeInfo(const EdgeId edge_id) const;
+        public:
+            explicit TransportRouter(const TransportCatalogue& db);
+            void SetRoutingSettings(const RoutingSettings& settings);
+            void BuildRouter();
+            void BuildRouter(const std::vector<BusRoute>& bus_routes, const std::vector<const domain::Stop*>& stops, const std::size_t vertex_count);
+            std::optional<domain::RouteStat> GetRoute(const std::string_view from, const std::string_view to) const;
+            const RoutingSettings& GetRoutingSettings() const;
+            const std::vector<EdgeInfo>& GetEdgeInfos() const;
+        private:
+            RoutingSettings settings_;
+            std::unordered_map<std::string_view, VertexInfo> stop_name_to_vertex_info_;
+            std::vector<EdgeInfo> edge_infos_;
+            std::optional<Graph> graph_;
+            std::optional<graph::Router<double>> router_;
+            const TransportCatalogue& db_;
 
-	private:
-		const TransportCatalogue& catalogue_;
-		std::unique_ptr<Graph> graph_;
-		std::unique_ptr<Router> router_;
-		RoutingSettings routing_settings_;
-		std::unordered_map<const Stop*, PairVertexesId> stop_to_pair_vertex_;
-		std::vector<EdgeInfo> edges_info_;
+            void InitGraph(const std::size_t vertex_count);
+            void AddWaitEdge(const std::string_view stop_name);
+            void AddBusEdge(const BusRoute& bus_route);
+        };
 
-		void BuildVertexes();
+    }
 
-		template<typename Iter>
-		void AddEdgeBusInfo(Iter first, Iter last, const Bus* bus);
-	};
-
-	template<typename Iter>
-	void TransportRouter::AddEdgeBusInfo(Iter first, Iter last, const Bus* bus) {
-
-		for (auto from = first; from != last; ++from) {
-			size_t distance = 0;
-			size_t span_count = 0;
-			VertexId from_vertex = stop_to_pair_vertex_.at(*from).end_wait;
-			for (auto to = std::next(from); to != last; ++to) {
-				auto before_to = std::prev(to);
-				distance += catalogue_.GetDistance((*before_to)->name, (*to)->name);
-				++span_count;
-
-				VertexId to_vertex = stop_to_pair_vertex_.at(*to).begin_wait;
-				double weight = double(distance) / routing_settings_.bus_velocity;
-
-				graph_->AddEdge(graph::Edge<double>{ from_vertex, to_vertex, weight });
-				edges_info_.push_back(EdgeBusInfo{ bus, weight, span_count });
-			}
-		}
-	}
-
-} // namespace catalogue
+}

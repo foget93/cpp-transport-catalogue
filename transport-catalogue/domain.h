@@ -1,55 +1,59 @@
 #pragma once
 
+#include <cstddef>
+#include <string>
+#include <variant>
+#include <vector>
+
 #include "geo.h"
 
-#include <string>
-#include <string_view>
-#include <set>
-#include <unordered_set>
-#include <deque>
-#include <optional>
+namespace transport_catalogue {
 
-namespace catalogue {
+    namespace domain {
 
-	enum class TypeRoute {
-		CIRCLE,
-		DIRECT
-	};
+        enum class BusType {
+            CIRCULAR,
+            DIRECT
+        };
 
-	struct Stop {
-		std::string name;
-		geo::Coordinates coordinate;
-	};
+        struct Stop {
+            std::string name;
+            geo::Coordinates coordinates;
+        };
 
-	struct Bus {
-		TypeRoute type_route;
-		std::string name;
-		std::deque<const Stop*> stops;
-	};
+        struct Bus {
+            BusType type;
+            std::string name;
+            std::vector<const Stop*> stops;
+        };
 
-	struct BusInfo {
-		bool bus_is_existing = false;
-		std::string name = "unknown bus";
-		size_t number_stops = 0;
-		size_t unique_stops = 0;
-		double length_route = 0;
-		double curvature = 0;
-	};
+        struct BusStat {
+            std::size_t stops_on_route;
+            std::size_t unique_stops;
+            std::size_t route_length_m;
+            double curvature;
+        };
 
-	struct StopInfo {
-		bool to_exist = false;
-		std::string name = "unknown stop";
-		std::unordered_set<const Bus*> buses;
-	};
+        struct RouteItem {
+            double time = 0.0;
+        };
 
-	struct CompareBuses {
-	public:
-		bool operator()(const Bus* l, const Bus* r) const;
-	};
+        struct BusRouteItem : public RouteItem {
+            std::string_view bus_name;
+            std::size_t span_count = 0u;
+        };
 
-	struct CompareStop {
-	public:
-		bool operator()(const Stop* l, const Stop* r) const;
-	};
+        struct WaitRouteItem : public RouteItem {
+            std::string_view stop_name;
+        };
 
-} // namespace catalogue
+        using Item = std::variant<BusRouteItem, WaitRouteItem>;
+
+        struct RouteStat {
+            double total_time_min = 0.0;
+            std::vector<Item> items;
+        };
+
+    }
+
+}

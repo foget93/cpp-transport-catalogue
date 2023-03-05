@@ -1,57 +1,56 @@
 #pragma once
 
+#include <cstddef>
 #include <deque>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include <string_view>
-#include <set>
 #include <functional>
-#include <variant>
+#include <list>
+#include <optional>
+#include <string_view>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
+#include "geo.h"
 #include "domain.h"
 
-namespace catalogue {
-	class TransportCatalogue {
-		using InfoMain = std::vector<Stop>;
-		using InfoSecondary = std::unordered_map<std::string, std::string>;
+namespace transport_catalogue {
 
-	public:
-		void AddStop(const Stop& stop);
-		void AddBus(const Bus& bus);
+    namespace detail {
 
-		const Bus* FindBus(std::string_view bus) const;
-		const Stop* FindStop(std::string_view stop) const;
+        struct StopPairHasher {
+            std::size_t operator()(const std::pair<const domain::Stop*, const domain::Stop*>& stop_pair) const;
+            std::hash<const void*> hasher;
+        };
 
-		void SetDistance(std::string_view from, std::string_view to, size_t distance);
+    }
 
-		BusInfo GetBusInfo(std::string_view bus) const;
-		StopInfo GetStopInfo(std::string_view stop) const;
-		size_t GetDistance(std::string_view from, std::string_view to) const;
-		const std::unordered_set<const Bus*> GetAllBuses() const;
-		const std::unordered_set<const Stop*> GetAllStops() const;
+    class TransportCatalogue {
+    public:
+        using StopPairsToDistances = std::unordered_map<std::pair<const domain::Stop*, const domain::Stop*>, std::size_t, detail::StopPairHasher>;
 
-	private:
-		std::deque<Stop> stops_;
-		std::unordered_map<std::string_view, const Stop*> stop_to_ptr_stop_;
-		std::deque<Bus> buses_;
-		std::unordered_map<std::string_view, const Bus*> bus_to_ptr_bus_;
-		std::unordered_map<const Stop*, std::unordered_set<const Bus*>> stop_to_buses_;
+        void AddStop(const std::string_view stop_name, const geo::Coordinates& coordinates);
+        void AddBus(const domain::BusType type, const std::string_view bus_name, const std::vector<std::string_view>& stop_names);
+        const domain::Stop* GetStop(const std::string_view stop_name) const;
+        const domain::Bus* GetBus(const std::string_view bus_name) const;
+        std::vector<std::pair<const domain::Stop*, std::size_t>> GetStopsToBusCounts() const;
+        std::vector<const domain::Stop*> GetStops() const;
+        std::vector<const domain::Bus*> GetBuses() const;
+        const StopPairsToDistances& GetStopPairsToDistances() const;
+        std::optional<domain::BusStat> GetBusStat(const std::string_view bus_name) const;
+        const std::unordered_set<const domain::Bus*>* GetBusesByStop(const std::string_view stop_name) const;
+        void SetDistanceBetweenStops(const std::string_view from, const std::string_view to, const std::size_t distance_m);
+        std::size_t GetDistanceBetweenStops(const domain::Stop* from, const domain::Stop* to) const;
+    private:
+        std::deque<domain::Stop> stops_;
+        std::deque<domain::Bus> buses_;
+        std::unordered_map<std::string_view, const domain::Stop*> stop_name_to_stop_;
+        std::unordered_map<std::string_view, const domain::Bus*> bus_name_to_bus_;
+        std::unordered_map<const domain::Stop*, std::unordered_set<const domain::Bus*>> stop_to_buses_;
+        StopPairsToDistances stop_pair_to_distance_;
 
-		class HasherDistance {
-		public:
-			size_t operator()(std::pair<const Stop*, const Stop*> key) const {
-				return hasher_(key.first) + hasher_(key.second) * 16;
-			}
-		private:
-			std::hash<const Stop*> hasher_;
-		};
+        double ComputeGeoRouteLength(const domain::Bus& bus) const;
+        std::size_t ComputeActualRouteLength(const domain::Bus& bus) const;
+    };
 
-		std::unordered_map<std::pair<const Stop*, const Stop*>,	size_t, HasherDistance> distances_;
-
-		size_t CalculateUniqueStops(std::string_view bus) const;
-		double CalculateFactLenghtRoute(std::string_view bus) const;
-		double CalculateGeoLenghtRoute(std::string_view bus) const;
-	};
-
-} // namespace catalogue
+}
