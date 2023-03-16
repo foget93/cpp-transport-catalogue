@@ -1,6 +1,0 @@
-# Hashes of file build rules.
-d81d6a26b4fc3d8cb54582218f1dc05c graph.pb.h
-b48c53a2b5de8bfb7b669a00ed515836 map_renderer.pb.h
-e74a4019441a0499b6c5dea511d27c33 svg.pb.h
-3fb91ff7df5308246cf938fe11ea4c1c transport_catalogue.pb.h
-adf9a2dfb1cb58bfdaa0e7537fde8505 transport_router.pb.h
